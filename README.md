@@ -46,7 +46,21 @@ npm run validate:levels   # check every level against the gap / step-up / hazard
 
 The build uses a relative base (`./`), so `dist/` works from a site root or a subpath. Phaser is emitted as its own chunk (~320 KB gzipped).
 
-## Deploying to Netlify
+## Deploying to GitHub Pages (main target)
+
+The game is published at **https://bl323.github.io/super-lad-alarm/**.
+
+`.github/workflows/deploy-pages.yml` runs on every push to `main` (or by hand from the Actions tab). It installs with `npm ci`, runs `npm run build` (which validates the levels first) and publishes `dist/` to Pages. A failed level check stops the deploy.
+
+One-time setup, already done for this repo: Settings → Pages → Source: **GitHub Actions**. With the CLI:
+
+```bash
+gh api -X POST repos/BL323/super-lad-alarm/pages -f build_type=workflow
+```
+
+The build uses relative paths (`base: './'`), so it works under the `/super-lad-alarm/` subpath with no extra config. To check a build at that subpath locally, use `npm run preview -- --base /super-lad-alarm/` and open `http://localhost:4173/super-lad-alarm/`. Pages can't set custom cache headers (it caches everything for 10 minutes); that's fine because built file names change on every build.
+
+## Deploying to Netlify (alternative)
 
 `netlify.toml` sets the build command, the `dist` publish directory, Node 24, and cache headers. Connect the repository in Netlify, or run `npx netlify deploy --prod --dir=dist` after a build.
 
@@ -179,7 +193,8 @@ The game title stays **Super Lad Alarm**.
 
 - **Phaser 3.90** (latest 3.x) rather than Phaser 4, as the brief requires Phaser 3.
 - **Vite 8.** Phaser is split out with Rolldown's `output.codeSplitting` groups (Vite 8 replaces `manualChunks`).
-- **Node 24.** It is the version installed locally and still an LTS line; `engines` is `>=24` so Node 26 LTS also works. Netlify builds with 24.
+- **Hosting: GitHub Pages instead of Netlify** (owner's choice, once the repo was made public). Deploys run through GitHub Actions on every push to `main`. `netlify.toml` is kept as a fallback.
+- **Node 24.** It is the version installed locally and still an LTS line; `engines` is `>=24` so Node 26 LTS also works. Netlify and the Pages workflow (via `.nvmrc`) build with 24.
 - **Integer scaling** is computed in *device* pixels: the `#game` frame is sized to the largest whole multiple of 320×180 that fits in physical pixels, then Phaser FIT fills that frame. Below 1× it falls back to plain FIT. Examples: 1920×1080 → 6×, 1280×720 → 4×, 844×390 → 2× (640×360 with letterboxing).
 - **Placeholder text** uses the system monospace font at 8 px (16 px for titles). It is readable but soft when upscaled; a code-generated pixel font can replace it later without touching callers (`src/ui/text.js`).
 - **Scene keys** live in `src/scenes/keys.js`; texture and animation keys in `src/assets.js`.
