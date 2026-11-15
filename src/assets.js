@@ -39,7 +39,7 @@ export const PUBS = {
   avocet: { name: 'THE AVOCET', wall: 'render', roof: '#29366f' },
 };
 
-// Playable characters: all Naylor (red hair, same skin tone) in different
+// Playable characters, in select-screen order (left to right): all Naylor (red hair, same skin tone) in different
 // outfits. Looks only: everyone shares the same movement and hitbox.
 // `look` picks the head/torso shapes in src/art/placeholders.js (PLAYER_LOOKS).
 // Palette letters: S skin, K eyes/black, H hair, B jacket/top, C shirt/white,
@@ -50,13 +50,13 @@ const SKIN = '#f4c49a';
 const HAIR = '#d65a1e'; // Naylor's red hair
 export const CHARACTERS = [
   {
-    id: 'senior',
-    name: 'SENIOR',
-    look: 'senior', // green school blazer, white shirt, green patterned tie, crest
+    id: 'casual',
+    name: 'CASUAL',
+    look: 'casual', // blue polo, red chinos
     palette: {
       S: SKIN, K: '#1a1c2c', H: HAIR,
-      B: '#1f6b3a', C: '#fff1e8', T: '#0e4d2a', Y: '#ffcd75', P: '#ffcd75',
-      D: '#3a3a46', W: '#1a1c2c',
+      B: '#3b7dd8', L: '#9cc8ff',
+      D: '#be3a34', W: '#fff1e8',
     },
   },
   {
@@ -70,13 +70,13 @@ export const CHARACTERS = [
     },
   },
   {
-    id: 'casual',
-    name: 'CASUAL',
-    look: 'casual', // blue polo, red chinos
+    id: 'senior',
+    name: 'SENIOR',
+    look: 'senior', // green school blazer, white shirt, green patterned tie, crest
     palette: {
       S: SKIN, K: '#1a1c2c', H: HAIR,
-      B: '#3b7dd8', L: '#9cc8ff',
-      D: '#be3a34', W: '#fff1e8',
+      B: '#1f6b3a', C: '#fff1e8', T: '#0e4d2a', Y: '#ffcd75', P: '#ffcd75',
+      D: '#3a3a46', W: '#1a1c2c',
     },
   },
 ];
