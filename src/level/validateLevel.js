@@ -71,9 +71,8 @@ export function validateLevel(map, rules = LEVEL_RULES, knownCollectibleTypes = 
   if (finishes.length !== 1) errors.push(`expected 1 finish, found ${finishes.length}`);
   const endZone = objs.find((o) => o.name === 'end-zone');
   if (!endZone) errors.push('missing "end-zone" rectangle');
-  if (endZone && finishes[0]) {
-    const f = finishes[0];
-    if (f.x < endZone.x || f.x > endZone.x + endZone.width) errors.push('finish is not inside the end-zone');
+  if (endZone && finishes[0] && finishes[0].x < endZone.x) {
+    errors.push('finish is before the end-zone (it must be inside it or after it)');
   }
   if (endZone) {
     const c0 = colOf(endZone.x);

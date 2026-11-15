@@ -4,7 +4,8 @@
 // Tiled, stop using this script for that level so your edits aren't overwritten.
 //
 // Story: Dorchester (start) → Wool (checkpoint 1) → Wareham (checkpoint 2)
-// → Parkstone (checkpoint 3, then the Train Conductor boss arena) → finish at The Avocet.
+// → the Train Conductor's train (checkpoint 3 just before it; boss fight on the roof)
+// → hop off at Parkstone → finish at The Avocet's door.
 
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -14,7 +15,7 @@ import { validateLevel, formatReport } from '../src/level/validateLevel.js';
 
 const T = TILESET.tiles;
 const TS = TILESET.tileWidth;
-const COLS = 180; // 9 screens of 20 tiles
+const COLS = 198; // ~9.9 screens of 20 tiles
 const ROWS = 12; // 192 px; the top 12 px sits above the 180 px screen
 const SURFACE = 10; // ground/platform surface row
 const ROOF = 8; // carriage roof row (2 tiles above the platform)
@@ -106,7 +107,7 @@ const espresso = (col, row) =>
 /** Broken glass sitting on the surface at `surfaceRow`. */
 const glass = (col, surfaceRow = SURFACE) =>
   addObject('hazard', 'glass', col * TS, (surfaceRow - 1) * TS, TS, TS, { kind: 'glass' });
-const boss = (col, kind) => addObject('boss', kind, ...feet(col), 0, 0, { kind });
+const boss = (col, kind, surfaceRow = SURFACE) => addObject('boss', kind, ...feet(col, surfaceRow), 0, 0, { kind });
 const zone = (name, c0, c1) => addObject('zone', name, c0 * TS, 0, (c1 - c0 + 1) * TS, ROWS * TS);
 const secret = (c0, c1, r0, r1) => addObject('secret', 'secret', c0 * TS, r0 * TS, (c1 - c0 + 1) * TS, (r1 - r0 + 1) * TS);
 const pub = (col, id) => addObject('pub', id, ...feet(col), 0, 0, { pub: id }, decor);
@@ -175,7 +176,8 @@ crates(115, 8);
 crates(116, 9);
 pint(115, 7); // then a 5-tile run-up to the gap
 
-// Section 3 · End: Wareham (checkpoint 2) → river → last train → Parkstone (cols 124–179).
+// Section 3 · End: Wareham (checkpoint 2) → river → last train → the
+// Conductor's train (boss) → Parkstone (cols 124–197).
 platform(124, 137); // 2-tile gap at 122–123
 checkpoint(126, 'Wareham');
 sign(129, 'WAREHAM');
@@ -190,18 +192,29 @@ carriage(143, 9);
 glass(147, ROOF);
 pint(147, 5);
 pint(150, 7);
-pint(153, 6); // 3-tile gap at 152–154
+pint(152, 6); // 2-tile gap at 152–153
 
-platform(155, 179);
-checkpoint(158, 'Parkstone'); // respawn just outside the boss arena
-sign(156, 'PARKSTONE');
-pint(157, 9);
-// Boss arena: the last screen (cols 160–179). The camera locks to it, a wall
-// closes behind the player, and the finish is held until the Conductor is beaten.
-zone('end-zone', 160, 179);
-boss(176, 'conductor');
-finish(173); // kept clear of the bottom-right jump button
-pub(176, 'avocet');
+// Lineside embankment: respawn point for the boss fight.
+embankment(154, 157);
+checkpoint(156, 'Boss train');
+pint(155, 9);
+
+// Boss arena: the Train Conductor's own train, two coupled carriages one
+// screen long (cols 158–177). The fight is on the roof: the camera locks to
+// it, walls close on both sides, and the hills race past while it's on.
+carriage(158, 10);
+carriage(168, 10);
+zone('end-zone', 158, 177);
+boss(175, 'conductor', ROOF);
+
+// Parkstone: hop off the train and into The Avocet. The finish is the pub's
+// front door (same column as the pub). Col 190 keeps it clear of the jump
+// button when the camera stops at the end of the level.
+platform(178, 197);
+sign(182, 'PARKSTONE');
+pint(181, 9);
+pub(190, 'avocet');
+finish(190);
 
 // --- Write ----------------------------------------------------------------------
 

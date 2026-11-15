@@ -23,14 +23,14 @@ export default class Button extends Phaser.GameObjects.Container {
     this.pressed = false;
 
     this.label = addPixelText(scene, 0, 0, label, { scale }).setOrigin(0.5);
-    this.w = width ?? Math.ceil(this.label.width + STYLE.padX * 2);
-    this.h = STYLE.height;
+    this.btnW = width ?? Math.ceil(this.label.width + STYLE.padX * 2);
+    this.btnH = STYLE.height;
     this.bg = scene.add.graphics();
     this.add([this.bg, this.label]);
     this.draw();
 
     const pad = STYLE.hitPadding;
-    this.setSize(this.w + pad * 2, this.h + pad * 2);
+    this.setSize(this.btnW + pad * 2, this.btnH + pad * 2);
     this.setInteractive({ useHandCursor: true });
     this.on('pointerdown', () => {
       this.pressed = true;
@@ -56,7 +56,7 @@ export default class Button extends Phaser.GameObjects.Container {
   }
 
   draw() {
-    const { w, h } = this;
+    const { btnW: w, btnH: h } = this;
     const g = this.bg.clear();
     const hot = this.focused || this.pressed;
     g.fillStyle(hot ? STYLE.focusFill : STYLE.fill, STYLE.fillAlpha);

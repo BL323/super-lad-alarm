@@ -8,7 +8,7 @@ export const TEX = {
   ESPRESSO: 'espresso-martini',
   GLASS: 'glass', // broken-glass hazard
   CHECKPOINT: 'checkpoint', // railway signal: red → green
-  FINISH: 'finish', // pub hanging sign
+  FINISH: 'finish', // The Avocet's front door: closed (padlocked) / open
   TILES: 'tiles',
   HILLS: 'hills', // parallax backdrop
   EASEL: 'easel',
@@ -17,6 +17,7 @@ export const TEX = {
   TICKET: 'ticket', // his thrown tickets
   TICKET_MARKER: 'ticket-marker', // where a ticket will land
   DIZZY_STARS: 'dizzy-stars',
+  CONFETTI: 'confetti',
 };
 
 // Bitmap font key for crisp HUD text (built from src/art/pixelFont.js at boot).
@@ -86,6 +87,11 @@ export const CONDUCTOR_FRAME = {
   throw: 6,
   count: 7,
 };
+
+// The finish door is drawn over the pub texture's own door (14×26 at x 41,
+// y 54 of the 96×80 pub front), so a finish placed at a pub's x lines up.
+export const FINISH_FRAME = { width: 14, height: 26, closed: 0, open: 1 };
+export const CONFETTI_FRAME = { width: 3, height: 2, count: 6 };
 
 export const PINT_FRAME = { width: 16, height: 16, count: 4 };
 export const ESPRESSO_FRAME = { width: 16, height: 16, count: 2 };

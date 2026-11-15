@@ -56,6 +56,7 @@ export const PLAYER = {
 export const PARALLAX = {
   hillsFactor: 0.3, // hills scroll at 30% of camera speed
   hillsBottom: 152, // screen y of the bottom of the hills strip (just below the platform top)
+  trainSpeed: 0.08, // px/ms the hills race past while the boss fight runs (the train is moving)
 };
 
 // Secret areas: foreground (station canopy) fades to this alpha while the player is inside.
@@ -102,8 +103,24 @@ export const BOSS = {
   body: { width: 12, height: 26, offsetX: 2, offsetY: 4 },
 };
 
-// Delay between touching the finish and the Complete screen (celebration).
-export const FINISH_DELAY_MS = 1200;
+// Delay between reaching the pub door and the Complete screen (the lad walks
+// in, confetti falls, "CHEERS!").
+export const FINISH_DELAY_MS = 2600;
+
+// What the lad says when the Conductor is beaten, and how long the bubble stays.
+export const SPEECH = {
+  bossDefeated: "I'M PAYING TO BE HERE",
+  durationMs: 2600,
+  textScale: 2,
+};
+
+// Finish celebration.
+export const CONFETTI = {
+  doorBurst: 50, // pieces thrown out of the doorway
+  rainMs: 1800, // how long confetti falls across the screen
+  rainEveryMs: 30,
+  lifespanMs: 3200,
+};
 
 // Input.
 export const INPUT = {

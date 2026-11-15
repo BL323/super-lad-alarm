@@ -37,6 +37,7 @@ export default class Hud {
       this.update();
       this.timer.setTint(0xffcd75);
       this.bump([this.timer]);
+      this.showToast('CHEERS!');
     };
     gameScene.events.on('pickup', onPickup);
     gameScene.events.on('level-complete', onComplete);

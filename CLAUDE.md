@@ -19,4 +19,7 @@
 - Listeners on `scene.events` / `game.events` / `scale` must be removed on SHUTDOWN (emitters outlive restarts).
 - Runs are timed, not scored: no points, no saved best, no pause (owner's decision, overrides the brief). Final time = clock + 2 s per missed pint − bonus `timeBonusMs`; see `finalTime()` in `src/systems/GameState.js`. Don't add localStorage.
 - Portrait freeze uses `game.loop.sleep()`/`wake()` (src/systems/mobile.js); always `loop.resetDelta()` before `wake()` or the clock jumps.
-- Boss: `src/systems/BossArena.js` + `src/entities/Conductor.js`, tuned by `BOSS` in config. Any player death during the fight resets it. Camera `pan()` needs long ease names (`'Sine.easeInOut'`); tweens accept short ones.
+- Boss: `src/systems/BossArena.js` + `src/entities/Conductor.js`, tuned by `BOSS` in config. The fight is on the roof of his train (cols 158–177), then Parkstone and the pub door follow. Any player death during the fight resets it. Camera `pan()` needs long ease names (`'Sine.easeInOut'`); tweens accept short ones.
+- Phaser Containers already have `x, y, z, w` (Transform): never store sizes as `this.w`/`this.h` on a Container (`setPosition()` resets `w` to 0).
+- Listeners on `scene.events` 'update' can fire once more in the frame their owner is destroyed (snapshot emit); guard with `if (!this.scene) return`.
+- The finish is a pub door: put the `finish` object in the same column as its `pub` decor.

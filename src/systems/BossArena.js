@@ -4,14 +4,16 @@ import { TEX } from '../assets.js';
 import Conductor, { BossState } from '../entities/Conductor.js';
 import { DEPTH } from '../level/LevelLoader.js';
 
-// The Train Conductor fight in the Parkstone end zone.
+// The Train Conductor fight on the roof of his train (the level's end zone),
+// between Wareham and Parkstone.
 //
-// Entering the zone starts it: the camera pans to and locks on the arena, a
-// wall closes behind the player, and he begins after a short intro. Tickets
+// Entering the zone starts it: the camera pans to and locks on the arena,
+// walls close on both sides, and he begins after a short intro. Tickets
 // land where their floor markers show. Dying resets the whole encounter (he's
-// back to full health, the wall opens, the camera follows again) and the
-// player walks back in from the Parkstone checkpoint. Three stomps while he's
-// dizzy beat him and unlock the finish.
+// back to full health, the walls open, the camera follows again) and the
+// player walks back in from the checkpoint beside the track. Three stomps
+// while he's dizzy beat him; the walls open, the camera follows again, and
+// the player hops off at Parkstone to the (now unlocked) pub door.
 export default class BossArena {
   /**
    * @param {Phaser.Scene} scene GameScene
@@ -25,10 +27,13 @@ export default class BossArena {
     this.floorY = boss.y;
     this.status = 'idle'; // idle | intro | fighting | won
 
-    // Wall that closes behind the player once the fight starts.
-    this.wall = scene.add.zone(zone.x - 4, GAME_HEIGHT / 2, 8, GAME_HEIGHT);
-    scene.physics.add.existing(this.wall, true);
-    this.wall.body.enable = false;
+    // Walls that close on both sides once the fight starts.
+    this.walls = [zone.x - 4, zone.right + 4].map((x) => {
+      const w = scene.add.zone(x, GAME_HEIGHT / 2, 8, GAME_HEIGHT);
+      scene.physics.add.existing(w, true);
+      w.body.enable = false;
+      return w;
+    });
 
     this.tickets = scene.physics.add.group({ allowGravity: true });
 
@@ -42,8 +47,8 @@ export default class BossArena {
 
     const physics = scene.physics.add;
     physics.collider(this.boss, ground);
-    physics.collider(this.boss, this.wall);
-    physics.collider(player, this.wall);
+    physics.collider(this.boss, this.walls);
+    physics.collider(player, this.walls);
     physics.overlap(player, this.boss, () => this.onTouchBoss());
     physics.overlap(player, this.tickets, () => {
       if (this.isActive) player.die();
@@ -63,7 +68,7 @@ export default class BossArena {
   start() {
     if (this.status !== 'idle') return;
     this.status = 'intro';
-    this.wall.body.enable = true;
+    this.setWalls(true);
 
     const cam = this.scene.cameras.main;
     cam.stopFollow();
@@ -80,15 +85,22 @@ export default class BossArena {
 
   reset() {
     this.status = 'idle';
-    this.wall.body.enable = false;
+    this.setWalls(false);
     this.clearTickets();
     this.boss.reset();
+    this.releaseCamera();
+    this.scene.events.emit('boss-reset');
+  }
 
+  setWalls(on) {
+    for (const w of this.walls) w.body.enable = on;
+  }
+
+  releaseCamera() {
     const cam = this.scene.cameras.main;
     cam.panEffect.reset();
     cam.setBounds(0, 0, this.levelWidth, GAME_HEIGHT);
     cam.startFollow(this.player, true, CAMERA.lerp, CAMERA.lerp);
-    this.scene.events.emit('boss-reset');
   }
 
   update(time, delta) {
@@ -123,7 +135,8 @@ export default class BossArena {
   win() {
     this.status = 'won';
     this.clearTickets();
-    this.wall.body.enable = false;
+    this.setWalls(false);
+    this.releaseCamera(); // free to hop off at Parkstone
     this.scene.cameras.main.flash(250, 255, 236, 39);
     this.boss.exit(() => this.boss.setVisible(false));
     this.scene.events.emit('boss-defeated');

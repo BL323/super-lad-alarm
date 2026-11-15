@@ -15,6 +15,8 @@ import {
   ESPRESSO_FRAME,
   CHECKPOINT_FRAME,
   CONDUCTOR_FRAME,
+  FINISH_FRAME,
+  CONFETTI_FRAME,
   TILESET,
 } from '../assets.js';
 import { drawPixelText, measurePixelText } from './pixelFont.js';
@@ -336,23 +338,39 @@ function makeCheckpoint(scene) {
   });
 }
 
-// Finish: a pub hanging sign with a pint on it.
+// Finish: The Avocet's front door. Closed and padlocked while the Conductor
+// guards it; open with warm light spilling out once he's beaten.
 function makeFinish(scene) {
-  makeImage(scene, TEX.FINISH, 16, 48, (ctx) => {
-    rect(ctx, C.darkGrey, 0, 46, 7, 2); // base
-    rect(ctx, C.woodDark, 2, 4, 2, 42); // post
-    rect(ctx, C.woodDark, 2, 4, 13, 2); // arm
-    px(ctx, C.grey, 6, 6); // chains
-    px(ctx, C.grey, 13, 6);
-    px(ctx, C.grey, 6, 7);
-    px(ctx, C.grey, 13, 7);
-    rect(ctx, C.orange, 4, 8, 12, 15); // board frame
-    rect(ctx, '#7e2553', 5, 9, 10, 13); // board
-    rect(ctx, C.white, 8, 11, 4, 2); // pint icon
-    rect(ctx, C.stout, 8, 13, 4, 6);
-    rect(ctx, C.grey, 7, 12, 1, 7);
-    rect(ctx, C.grey, 12, 12, 1, 7);
+  const { width: w, height: h } = FINISH_FRAME;
+  makeSheet(scene, TEX.FINISH, w, h, 2, (ctx, i) => {
+    rect(ctx, '#3a2414', 0, 0, w, h); // frame
+    if (i === FINISH_FRAME.closed) {
+      rect(ctx, C.woodDark, 1, 1, w - 2, h - 1);
+      rect(ctx, C.gold, 2, 2, w - 4, 4); // fanlight
+      rect(ctx, C.woodDark, 6, 2, 1, 4);
+      for (const [x, y, ph] of [[2, 8, 6], [8, 8, 6], [2, 16, 8], [8, 16, 8]]) rect(ctx, C.wood, x, y, 4, ph); // panels
+      px(ctx, C.orange, 11, 15); // knob
+      // Padlock
+      rect(ctx, C.grey, 5, 11, 1, 2);
+      rect(ctx, C.grey, 8, 11, 1, 2);
+      rect(ctx, C.grey, 6, 10, 2, 1);
+      rect(ctx, C.yellow, 4, 13, 6, 4);
+      px(ctx, C.ink, 7, 14);
+      px(ctx, C.ink, 7, 15);
+    } else {
+      rect(ctx, C.gold, 1, 1, w - 2, h - 1); // warm light inside
+      rect(ctx, '#ffe9a8', 4, 3, w - 6, h - 6);
+      rect(ctx, C.woodDark, 1, 1, 3, h - 1); // door swung open
+      rect(ctx, C.wood, 2, 4, 1, h - 8);
+      px(ctx, C.orange, 3, 15);
+    }
   });
+}
+
+function makeConfetti(scene) {
+  const colors = ['#ff004d', '#ffec27', '#00e436', '#29adff', '#ff77a8', '#ffa300'];
+  const { width, height, count } = CONFETTI_FRAME;
+  makeSheet(scene, TEX.CONFETTI, width, height, count, (ctx, i) => rect(ctx, colors[i], 0, 0, width, height));
 }
 
 function makeTiles(scene) {
@@ -756,6 +774,7 @@ const BUILDERS = {
   [TEX.GLASS]: makeGlass,
   [TEX.CHECKPOINT]: makeCheckpoint,
   [TEX.FINISH]: makeFinish,
+  [TEX.CONFETTI]: makeConfetti,
   [TEX.TILES]: makeTiles,
   [TEX.HILLS]: makeHills,
   [TEX.EASEL]: makeEasel,

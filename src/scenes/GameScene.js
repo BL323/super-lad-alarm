@@ -1,13 +1,15 @@
 import Phaser from 'phaser';
 import { SCENE } from './keys.js';
-import { COLORS, CAMERA, DEBUG, GAME_HEIGHT, PARALLAX, SECRET_REVEAL_ALPHA, FINISH_DELAY_MS } from '../config.js';
-import { TEX, DEFAULT_CHARACTER } from '../assets.js';
+import { COLORS, CAMERA, DEBUG, GAME_HEIGHT, PARALLAX, SECRET_REVEAL_ALPHA, FINISH_DELAY_MS, SPEECH } from '../config.js';
+import { TEX, DEFAULT_CHARACTER, FINISH_FRAME } from '../assets.js';
 import { addText } from '../ui/text.js';
 import VirtualInput from '../systems/Input.js';
 import { createGameState, addPickup, finalTime } from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
 import Checkpoints from '../systems/Checkpoints.js';
 import BossArena from '../systems/BossArena.js';
+import { celebrate } from '../systems/Celebration.js';
+import SpeechBubble from '../ui/SpeechBubble.js';
 import Player from '../entities/Player.js';
 import Collectible, { collectibleTypes } from '../entities/Collectible.js';
 import { getLevel } from '../level/levels.js';
@@ -37,13 +39,17 @@ export default class GameScene extends Phaser.Scene {
     this.checkpoints = new Checkpoints(this, this.level.checkpoints, this.player, this.gameState);
     this.spawnCollectibles();
 
-    // Finish: reaching it completes the level unless `finishLocked` is set
-    // (the boss holds it until he is beaten).
+    // Finish: The Avocet's front door, drawn over the pub's own door. Reaching
+    // it completes the level unless `finishLocked` is set (the boss holds it
+    // until he is beaten).
     this.finishLocked = false;
     if (this.level.finish) {
       const f = this.level.finish;
-      this.finish = this.add.image(f.x, f.y, TEX.FINISH).setOrigin(0.5, 1).setDepth(DEPTH.props);
-      const trigger = this.add.zone(f.x, GAME_HEIGHT / 2, 16, GAME_HEIGHT);
+      this.finish = this.add
+        .sprite(f.x, f.y, TEX.FINISH, FINISH_FRAME.open)
+        .setOrigin(0.5, 1)
+        .setDepth(DEPTH.decor + 1);
+      const trigger = this.add.zone(f.x, GAME_HEIGHT / 2, 10, GAME_HEIGHT);
       this.physics.add.existing(trigger, true);
       this.physics.add.overlap(this.player, trigger, () => this.completeLevel());
     }
@@ -62,7 +68,14 @@ export default class GameScene extends Phaser.Scene {
       this.events.on('boss-reset', () => {
         this.inEndZone = false; // re-arm onEnterEndZone for the next attempt
       });
-      this.events.on('boss-defeated', () => this.setFinishLocked(false));
+      this.events.on('boss-defeated', () => {
+        this.setFinishLocked(false);
+        new SpeechBubble(this, this.player, SPEECH.bossDefeated, {
+          scale: SPEECH.textScale,
+          durationMs: SPEECH.durationMs,
+          depth: DEPTH.foreground + 5,
+        });
+      });
     }
 
     const cam = this.cameras.main;
@@ -71,6 +84,7 @@ export default class GameScene extends Phaser.Scene {
 
     this.inEndZone = false;
     this.inSecret = false;
+    this.trainTravel = 0;
 
     if (DEBUG) {
       this.debugText = addText(this, 4, 4, '', { color: '#1a1c2c' }).setScrollFactor(0).setDepth(1000);
@@ -88,7 +102,9 @@ export default class GameScene extends Phaser.Scene {
     this.player.update(time, delta);
     this.arena?.update(time, delta);
 
-    this.level.hills.tilePositionX = this.cameras.main.scrollX * PARALLAX.hillsFactor;
+    // While the boss fight runs, the train is moving: the hills race past.
+    if (this.arena?.isActive) this.trainTravel += delta * PARALLAX.trainSpeed;
+    this.level.hills.tilePositionX = this.cameras.main.scrollX * PARALLAX.hillsFactor + this.trainTravel;
     this.updateSecrets();
 
     const { endZone } = this.level;
@@ -135,10 +151,16 @@ export default class GameScene extends Phaser.Scene {
     const s = this.gameState;
     if (s.completed || this.finishLocked || this.player.dead) return;
     s.completed = true; // stops the clock
-    this.controls.enabled = false; // the lad coasts to a stop
+    this.controls.enabled = false;
     Audio.play('finish');
-    this.cameras.main.flash(200, 255, 241, 232);
     this.events.emit('level-complete', s);
+
+    // Walk in through the pub door, then confetti.
+    const door = this.finish;
+    this.player.enterDoor(door.x, () => {
+      this.cameras.main.flash(180, 255, 236, 39);
+      celebrate(this, door.x, door.y - door.height / 2, DEPTH.foreground + 1);
+    });
 
     const result = { ...s, ...finalTime(s), characterId: this.characterId };
     this.time.delayedCall(FINISH_DELAY_MS, () => this.scene.start(SCENE.COMPLETE, result));
@@ -158,7 +180,7 @@ export default class GameScene extends Phaser.Scene {
 
   setFinishLocked(locked) {
     this.finishLocked = locked;
-    this.finish?.setAlpha(locked ? 0.45 : 1);
+    this.finish?.setFrame(locked ? FINISH_FRAME.closed : FINISH_FRAME.open);
   }
 
   /**

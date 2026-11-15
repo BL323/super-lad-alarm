@@ -92,6 +92,8 @@ src/
   systems/BossArena.js  Train Conductor fight: camera lock, wall, tickets, stomp/contact rules, reset, win
   entities/Conductor.js the boss's state machine (walk/throw, wind-up, dash, dizzy, hurt, defeated)
   ui/BossBar.js         "CONDUCTOR" label and health pips
+  ui/SpeechBubble.js    speech bubble that follows a sprite and stays on screen
+  systems/Celebration.js finish confetti (door burst + falling shower)
   systems/Input.js      keyboard + touch merged into one virtual input state
   systems/Audio.js      no-op sound wrapper (unlocks audio on first input)
   systems/Scaling.js    integer-scale frame sizing for Phaser FIT mode
@@ -119,15 +121,16 @@ Measured in the stage 2 test strip: full speed in 0.23 s, stop in 0.15 s, full j
 
 ## Boss: the Train Conductor
 
-Naylor's arch-nemesis guards the last screen at Parkstone, between the player and The Avocet.
+Naylor's arch-nemesis is fought on the roof of his own train, between Wareham and Parkstone (as in `docs/story.md`). The arena is two coupled carriages, one screen long (cols 158–177). Beat him, hop off at Parkstone and walk into The Avocet.
 
-- **Arena.** Walking into the `end-zone` starts the fight. The camera pans to and locks on that screen, a wall closes behind the player, and "TICKETS PLEASE!" appears with a CONDUCTOR bar of three health pips. The finish is locked (dimmed) until he's beaten.
+- **Arena.** Jumping up onto his train (the `end-zone`) starts the fight. The camera pans to and locks on that screen, walls close on both sides, the hills race past (the train is moving), and "TICKETS PLEASE!" appears with a CONDUCTOR bar of three health pips. The finish is locked (dimmed) until he's beaten.
 - **His cycle:** walk towards you, throwing tickets (from the very first phase) → wind-up (flashes red, red "!" over his head) → dash across the platform → hit the arena edge and go dizzy (stars over his cap) → repeat.
 - **Tickets** are lobbed so they land on the player's position after 1.1 s. A dark marker on the floor shows exactly where each will land.
 - **Beating him:** land on his cap while he's dizzy. Three stomps win, and he gets faster after each (walk speed, throw rate, tickets per volley, a shorter wind-up and a faster dash). Landing on his cap at other times just bounces you off harmlessly.
-- **Dying:** touching him from the side while he walks, winds up or dashes, or being hit by a ticket, goes through the usual `die()`. Any death resets the whole fight (owner's decision): he's back to full health at his start, the wall opens, and you respawn at the Parkstone checkpoint just outside and walk back in.
+- **Dying:** touching him from the side while he walks, winds up or dashes, or being hit by a ticket, goes through the usual `die()`. Any death resets the whole fight (owner's decision): he's back to full health at his start, the walls open, and you respawn at the checkpoint on the embankment beside the track and jump back aboard.
 - **Time:** the clock keeps running through the fight. Beating him gives no time bonus (owner's decision).
-- **When he's beaten** he stomps off, "CONDUCTOR BEATEN!" appears, and the finish unlocks.
+- **When he's beaten** he stomps off, "CONDUCTOR BEATEN!" appears, the lad says **"I'M PAYING TO BE HERE"** in a speech bubble (`SPEECH.bossDefeated` in `config.js`), the walls open, the train stops (the hills stop racing), and The Avocet's door at Parkstone unlocks and swings open.
+- **The finish is the pub door.** It's padlocked while he's in the arena. Walking into the open door stops the clock. The lad walks inside, "CHEERS!" appears, confetti bursts out of the doorway and rains across the screen, and the Complete screen follows (`FINISH_DELAY_MS`, `CONFETTI` in `config.js`).
 
 All tuning lives in `BOSS` in `src/config.js`, with values per phase.
 
@@ -197,9 +200,9 @@ Background story: [docs/story.md](docs/story.md). Naylor's "Lad Alarm Train Craw
 | Start | Dorchester station, Brewhouse pub behind |
 | Checkpoint 1 | Wool station, The Black Bear (angry locals in the windows, scenery only) |
 | Checkpoint 2 | Wareham station, The Old Granary, then the river (easel floating in it, scenery) |
-| Checkpoint 3 | Parkstone, just outside the boss arena |
-| `end-zone` | The Train Conductor boss arena, the last screen at Parkstone |
-| Finish | Parkstone, outside The Avocet |
+| Checkpoint 3 | Lineside embankment, just before the Conductor's train |
+| `end-zone` | The Train Conductor boss arena: the roof of his train, between Wareham and Parkstone |
+| Finish | The Avocet's front door at Parkstone |
 | Platforms | Parked British carriages (roof-hopping); gaps between carriages are the jumps |
 | Coin | Pint of stout; every one missed adds 2 s to the final time |
 | Hazard | Broken glass on platforms and roofs; the river at Wareham |
@@ -222,19 +225,20 @@ The game title stays **Super Lad Alarm**.
 - **Keep the bottom corners clear.** The touch buttons cover roughly the bottom 42 game px at each side of the screen, which is where the ground runs. Spawn points, and anything the player must see at the very start and end of a level (where the camera stops scrolling), should sit at least ~100 px from the left edge and away from the bottom-right corner.
 - **Jump presses are latched** from key and touch events, not polled, so a tap shorter than one frame is never lost.
 - **Level authoring.** `level-01.json` is generated from a short Node script rather than drawn in Tiled, because no Tiled install is assumed and the script is easy to review. The output is standard Tiled JSON.
-- **Level length and pacing.** 180 tiles (2,880 px, 9 screens). Start is Dorchester (cols 0–53), middle is Wool to the embankment (cols 54–123), end is Wareham to Parkstone (cols 124–179). The middle is about 3.5 screens, a little under the brief's 4–5, so the stations fit evenly. A non-stop run that never stops to collect takes about 23 s; a first-time player collecting pints will take longer.
+- **Level length and pacing.** 198 tiles (3,168 px, 9.9 screens). Start is Dorchester (cols 0–53), middle is Wool to the embankment (cols 54–123), end is Wareham → the boss train (cols 158–177) → Parkstone (cols 178–197). The middle is about 3.5 screens, a little under the brief's 4–5, so the stations fit evenly. A non-stop run that never stops to collect takes about 23 s; a first-time player collecting pints will take longer.
 - **Hazard placement.** The autopilot play test found two unfair spots, both now fixed: glass right where you land after dropping off a roof (removed), and a crate stair ending three tiles before a gap (moved two tiles earlier). Both had passed the validator's rules.
 - **Hidden espresso martini.** It sits on a crate stair under the Wool station canopy. The canopy is drawn in front of the player and fades to 35% while you're underneath it.
 - **Checkpoint triggers** are full screen height, so a checkpoint can't be jumped over.
-- **Texture keys follow the theme:** `pint`, `espresso-martini`, `glass`, `checkpoint` (a railway signal), `finish` (a pub sign), `tiles`, `hills`, `easel`, `pub-<id>`, `sign-<text>`.
+- **Texture keys follow the theme:** `pint`, `espresso-martini`, `glass`, `checkpoint` (a railway signal), `finish` (The Avocet's door, 14×26, closed/open frames), `confetti`, `tiles`, `hills`, `easel`, `pub-<id>`, `sign-<text>`.
 - **"The Old Granary".** `docs/story.md` spells it "Grainary"; the pub sign uses "Granary". Change `PUBS` in `src/assets.js` if that's wrong.
 - **Collectibles.** The registry in `src/entities/Collectible.js` holds `pint` (`counts: true`, shown as collected/total) and `espresso` (`timeBonusMs: 5000`, not in the total, with a pop-up "ESPRESSO MARTINI! -5.0S"). To add a type, add an entry and its texture, then place objects with that `type`.
 - **HUD text uses a pixel bitmap font** built at boot from the 3×5 font, drawn at 2× with a baked drop shadow. That's 10 game px tall (20 CSS px on a 640×360 phone), crisp at every integer scale, and legible over both sky and brick. The menu and other screens still use the system font until stage 5 or 7.
 - **Timed runs instead of score (owner's change, replacing the brief's points and best score).** The HUD shows the pint counter at top left and a running clock (`m:ss.t`) at top right. The clock runs from the start of the level to the finish and keeps going through deaths and respawns. Final time = clock + 2 s × missed pints − 5 s if the martini was found, never below zero. The penalty is `TIMING.missedPintPenaltyMs` in `config.js`, and the martini bonus is `timeBonusMs` on its registry entry. The maths is in `finalTime()` in `src/systems/GameState.js`.
 - **Character select (added at the owner's request).** Naylor plus two placeholder lads, looks only. The choice is kept for the session (Phaser registry) so PLAY AGAIN keeps the same lad. Nothing is saved between sessions.
 - **One text style.** All screens and the HUD now use the pixel bitmap font (`addPixelText`). The system font remains only for the `?debug` readout.
-- **Completion.** Touching the finish (a full-height trigger) stops the clock, flashes the screen, lets the lad coast to a stop and shows the Complete screen 1.2 s later. The screen shows the time, the missed-pint penalty, the martini bonus and the final time. `GameScene.finishLocked` holds the finish back until the Train Conductor is beaten (the sign is dimmed while locked).
+- **Completion.** Touching the finish (a full-height trigger) stops the clock, flashes the screen, lets the lad coast to a stop and shows the Complete screen 1.2 s later. The screen shows the time, the missed-pint penalty, the martini bonus and the final time. `GameScene.finishLocked` holds the finish back until the Train Conductor is beaten (the door shows a padlock while locked).
 - **Portrait freeze without a pause feature.** The rotate overlay sleeps Phaser's game loop rather than pausing scenes, because there is no pause feature. On waking it resets the frame delta first, otherwise the first frame back would add all the portrait time to the clock.
-- **Boss fight design (owner's choices: resets on death, no time bonus, tickets from the start).** Only a dizzy Conductor can be stomped, so the fight needs nothing beyond left, right and jump. The arena is the level's last screen (cols 160–179), so the finish (col 173) and the respawn point stay clear of the touch buttons. When he's dizzy against the left wall he sits behind the semi-transparent left buttons on phones. He's still visible, and moving his stopping point inwards would create a corner that's safe from his dash.
+- **Boss fight design (owner's choices: resets on death, no time bonus, tickets from the start).** Only a dizzy Conductor can be stomped, so the fight needs nothing beyond left, right and jump. The fight is on the Conductor's train roof (owner's request: fighting him on land after the train made no narrative sense). The level grew by one screen so Parkstone and The Avocet come after the train. The arena has walls on both sides, and beating him frees the camera so you can hop off. When he's dizzy against the left wall he sits behind the semi-transparent left buttons on phones. He's still visible, and moving his stopping point inwards would create a corner that's safe from his dash.
+- **Finish door placement.** The finish object shares the pub's column, so the door sprite sits exactly over the pub texture's own door (`FINISH_FRAME` in `src/assets.js`). The Avocet is at col 190, so the door sits about 200 px across the screen when the camera stops at the end of the level, clear of the jump button on phones. The validator requires the finish to be inside or after the end zone.
 - **No persistence and no pause (owner's changes).** The brief's localStorage best score and its pause button/overlay (P/Esc) were removed. Nothing is written to storage.
 - **Collected items stay collected** across deaths, and the pint count never goes down.

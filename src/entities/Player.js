@@ -65,7 +65,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   update(time, delta) {
-    if (this.dead) return;
+    if (this.dead || this.enteringDoor) return;
 
     const s = this.stats;
     const input = this.controls.state;
@@ -122,6 +122,24 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     } else {
       this.setMoveState(rising ? PlayerState.JUMP : PlayerState.FALL);
     }
+  }
+
+  /** Walk into a doorway at `x` and disappear inside (end of the level). */
+  enterDoor(x, onInside) {
+    if (this.enteringDoor) return;
+    this.enteringDoor = true;
+    this.body.stop();
+    this.body.enable = false;
+    this.setFlipX(x < this.x);
+    this.setMoveState(PlayerState.RUN);
+    this.scene.tweens.add({
+      targets: this,
+      x,
+      duration: 260,
+      onComplete: () => {
+        this.scene.tweens.add({ targets: this, alpha: 0, scale: 0.8, duration: 260, onComplete: () => onInside?.() });
+      },
+    });
   }
 
   /** Bounce upwards (e.g. off the Conductor's cap). Holding jump keeps the full bounce. */
