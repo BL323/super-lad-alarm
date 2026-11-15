@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { SCENE } from './keys.js';
 import { createPlaceholderTextures } from '../art/placeholders.js';
+import { registerAnimations } from '../art/animations.js';
 
 export default class BootScene extends Phaser.Scene {
   constructor() {
@@ -15,6 +16,7 @@ export default class BootScene extends Phaser.Scene {
 
   create() {
     createPlaceholderTextures(this);
+    registerAnimations(this);
     this.scene.start(SCENE.MENU);
   }
 }

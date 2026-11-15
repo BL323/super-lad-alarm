@@ -1,0 +1,170 @@
+import Phaser from 'phaser';
+import { PLAYER } from '../config.js';
+import { TEX, ANIM, PLAYER_FRAMES } from '../assets.js';
+import Audio from '../systems/Audio.js';
+
+// Movement states. They only choose the animation; physics never depends on art.
+export const PlayerState = {
+  IDLE: 'idle',
+  RUN: 'run',
+  JUMP: 'jump',
+  FALL: 'fall',
+};
+
+const STATE_ANIM = {
+  [PlayerState.IDLE]: ANIM.PLAYER_IDLE,
+  [PlayerState.RUN]: ANIM.PLAYER_RUN,
+  [PlayerState.JUMP]: ANIM.PLAYER_JUMP,
+  [PlayerState.FALL]: ANIM.PLAYER_FALL,
+};
+
+const RUN_ANIM_MIN_SPEED = 5; // px/s; below this on the ground we show idle
+
+function approach(value, target, step) {
+  return value < target ? Math.min(value + step, target) : Math.max(value - step, target);
+}
+
+export default class Player extends Phaser.Physics.Arcade.Sprite {
+  /**
+   * @param {Phaser.Scene} scene
+   * @param {number} x spawn x (sprite centre)
+   * @param {number} y spawn y (sprite centre)
+   * @param {import('../systems/Input.js').default} controls virtual input
+   */
+  constructor(scene, x, y, controls) {
+    super(scene, x, y, TEX.PLAYER, PLAYER_FRAMES.idle[0]);
+    scene.add.existing(this);
+    scene.physics.add.existing(this);
+
+    // Per-instance copy so upgrades can change movement at runtime.
+    this.stats = { ...PLAYER, body: { ...PLAYER.body } };
+    this.controls = controls;
+    this.spawnPoint = { x, y };
+    this.respawnPoint = null; // set by checkpoints; falls back to spawnPoint
+
+    this.moveState = null;
+    this.dead = false;
+    this.isJumping = false; // true from take-off until landing
+    this.jumpCut = false;
+    this.lastGroundedAt = -Infinity;
+    this.lastJumpPressedAt = -Infinity;
+
+    this.applyStats();
+    this.setCollideWorldBounds(true);
+    this.setMoveState(PlayerState.IDLE);
+  }
+
+  /** Re-apply hitbox and speed caps from `stats` (call after changing them). */
+  applyStats() {
+    const { body, maxFallSpeed } = this.stats;
+    this.body.setSize(body.width, body.height, false);
+    this.body.setOffset(body.offsetX, body.offsetY);
+    this.body.setMaxVelocity(10000, maxFallSpeed);
+  }
+
+  setMoveState(state) {
+    if (state === this.moveState) return this;
+    this.moveState = state;
+    this.play(STATE_ANIM[state], true);
+    return this;
+  }
+
+  update(time, delta) {
+    if (this.dead) return;
+
+    const s = this.stats;
+    const input = this.controls.state;
+    const body = this.body;
+    const dt = delta / 1000;
+    const onFloor = body.blocked.down || body.touching.down;
+
+    if (onFloor) {
+      this.lastGroundedAt = time;
+      if (body.velocity.y >= 0) this.isJumping = false;
+    }
+    if (input.jumpPressed) this.lastJumpPressedAt = time;
+
+    // Horizontal: accelerate towards the target speed, decelerate when released.
+    const dir = (input.right ? 1 : 0) - (input.left ? 1 : 0);
+    const accel = onFloor ? s.groundAccel : s.airAccel;
+    const decel = onFloor ? s.groundDecel : s.airDecel;
+    const vx = body.velocity.x;
+    let rate = accel;
+    if (dir === 0) rate = decel;
+    else if (vx * dir < 0) rate = Math.max(accel, decel); // turning round
+    const newVx = approach(vx, dir * s.maxRunSpeed, rate * dt);
+    body.setVelocityX(newVx);
+    if (dir !== 0) this.setFlipX(dir < 0);
+
+    // Jump, with coyote time (just left a ledge) and buffering (pressed just before landing).
+    const buffered = time - this.lastJumpPressedAt <= s.jumpBufferMs;
+    const grounded = onFloor || time - this.lastGroundedAt <= s.coyoteTimeMs;
+    if (buffered && grounded && !this.isJumping) {
+      body.setVelocityY(s.jumpVelocity);
+      this.isJumping = true;
+      this.jumpCut = false;
+      this.lastJumpPressedAt = -Infinity;
+      this.lastGroundedAt = -Infinity;
+      Audio.play('jump');
+    }
+
+    // Variable jump height: releasing early cuts the upward speed once.
+    if (this.isJumping && !this.jumpCut && !input.jumpHeld && body.velocity.y < 0) {
+      body.setVelocityY(body.velocity.y * s.jumpCutMultiplier);
+      this.jumpCut = true;
+    }
+
+    // Falling out of the world.
+    if (this.y - this.height / 2 > this.scene.physics.world.bounds.bottom + s.fallDeathMargin) {
+      this.die();
+      return;
+    }
+
+    // Animation state.
+    const rising = body.velocity.y < 0;
+    if (onFloor && !rising) {
+      this.setMoveState(Math.abs(newVx) > RUN_ANIM_MIN_SPEED ? PlayerState.RUN : PlayerState.IDLE);
+    } else {
+      this.setMoveState(rising ? PlayerState.JUMP : PlayerState.FALL);
+    }
+  }
+
+  /** The single death path (spikes, falls and, later, enemies all come here). */
+  die() {
+    if (this.dead) return;
+    this.dead = true;
+    Audio.play('death');
+    this.emit('died', this);
+
+    this.body.stop();
+    this.body.setAllowGravity(false);
+    this.anims.pause();
+    this.setTintFill(0xffffff);
+    this.flashTween = this.scene.tweens.add({
+      targets: this,
+      alpha: 0.2,
+      duration: 80,
+      yoyo: true,
+      repeat: -1,
+    });
+    this.scene.time.delayedCall(this.stats.deathFreezeMs, () => this.respawn());
+  }
+
+  respawn() {
+    const p = this.respawnPoint ?? this.spawnPoint;
+    this.flashTween?.remove();
+    this.flashTween = null;
+    this.clearTint();
+    this.setAlpha(1);
+    this.body.reset(p.x, p.y);
+    this.body.setAllowGravity(true);
+    this.isJumping = false;
+    this.lastGroundedAt = -Infinity;
+    this.lastJumpPressedAt = -Infinity;
+    this.dead = false;
+    this.anims.resume();
+    this.moveState = null;
+    this.setMoveState(PlayerState.IDLE);
+    this.emit('respawned', this);
+  }
+}

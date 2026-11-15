@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { SCENE } from './keys.js';
 import { GAME_TITLE, GAME_WIDTH, GAME_HEIGHT, COLORS } from '../config.js';
-import { addText, isTouchDevice } from '../ui/text.js';
+import { addText } from '../ui/text.js';
+import { isTouchDevice } from '../systems/device.js';
 
 export default class MenuScene extends Phaser.Scene {
   constructor() {

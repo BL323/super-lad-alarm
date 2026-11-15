@@ -5,3 +5,7 @@
 - All tunable numbers go in `src/config.js`; texture/animation keys in `src/assets.js`; scene keys in `src/scenes/keys.js`. Use `addText()` from `src/ui/text.js` for all text.
 - Runtime dependency is `phaser` only, dev dependency `vite` only. Don't add packages without a clear reason.
 - Phaser's `scale.refresh()` uses a cached parent size; call `scale.getParentBounds()` first (see `src/systems/Scaling.js`).
+- The Player reads only `VirtualInput.state`, never raw keys/pointers. All deaths go through `player.die()`.
+- Touch buttons cover the bottom corners: keep spawn points and level start/end content clear of them.
+- Test flags: `?touch` forces on-screen buttons on desktop; `?debug` (dev only) shows bodies and player state.
+- Phaser static bodies: `refreshBody()` resets the body size to the sprite, so call `body.setSize()` after it.

@@ -2,6 +2,12 @@
 
 export const GAME_TITLE = 'Super Lad Alarm';
 
+// URL flags for testing: ?debug shows physics bodies and player state (dev
+// builds only); ?touch forces the on-screen buttons on a non-touch device.
+const params = new URLSearchParams(window.location.search);
+export const DEBUG = import.meta.env.DEV && params.has('debug');
+export const FORCE_TOUCH = params.has('touch');
+
 // Logical resolution (16:9) and tile size.
 export const GAME_WIDTH = 320;
 export const GAME_HEIGHT = 180;
@@ -16,7 +22,7 @@ export const SCALING = {
 // Arcade physics. One shared gravity value.
 export const PHYSICS = {
   gravity: 900, // px/s²
-  debug: false,
+  debug: DEBUG,
 };
 
 // Player movement tuning (wired up in stage 2). Values are copied onto
@@ -33,12 +39,23 @@ export const PLAYER = {
   maxRunSpeed: 110, // px/s
   groundAccel: 600, // px/s²
   groundDecel: 800, // px/s²
+  airAccel: 500, // px/s², slightly less control in the air
+  airDecel: 300, // px/s², keeps momentum when no direction is held mid-jump
   maxFallSpeed: 400, // px/s
   coyoteTimeMs: 100,
   jumpBufferMs: 100,
   jumpCutMultiplier: 0.5, // vertical velocity multiplier when jump is released early
-  // Physics hitbox, independent of sprite frame size.
-  body: { width: 10, height: 14, offsetX: 3, offsetY: 2 },
+  deathFreezeMs: 500, // freeze + flash before respawn
+  fallDeathMargin: 32, // px below the world bottom before a fall counts as death
+  // Physics hitbox, independent of sprite frame size (16×16 placeholder:
+  // covers the cap to the shoes, cols 3–12, rows 2–14).
+  body: { width: 10, height: 13, offsetX: 3, offsetY: 2 },
+};
+
+// Camera.
+export const CAMERA = {
+  lerp: 0.2, // follow smoothing (1 = locked to player)
+  deadzoneWidth: 48, // px the player can move before the camera follows
 };
 
 // Scoring.
@@ -49,6 +66,19 @@ export const SCORING = {
 // Input.
 export const INPUT = {
   maxPointers: 3, // simultaneous touches (direction + jump + spare)
+};
+
+// On-screen touch buttons (game px unless noted). Button size grows when the
+// canvas is drawn small so it never renders below minCssPx on screen.
+export const TOUCH = {
+  minCssPx: 72, // brief minimum is 64 CSS px; a little extra for thumbs
+  minSize: 32,
+  maxSize: 52,
+  margin: 6, // from the screen / safe-area edge
+  gap: 4, // between the left and right buttons
+  hitPadding: 12, // invisible extra hit area around each button
+  idleAlpha: 0.45,
+  pressedAlpha: 0.9,
 };
 
 // One text style for the whole game. System monospace as a placeholder.

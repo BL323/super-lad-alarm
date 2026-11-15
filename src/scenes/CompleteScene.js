@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { SCENE } from './keys.js';
 import { GAME_WIDTH, COLORS } from '../config.js';
-import { addText, isTouchDevice } from '../ui/text.js';
+import { addText } from '../ui/text.js';
+import { isTouchDevice } from '../systems/device.js';
 
 // Level complete screen. Score, coins, best score and the next-level hook are
 // added in stage 5.

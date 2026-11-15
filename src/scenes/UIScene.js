@@ -1,12 +1,23 @@
 import Phaser from 'phaser';
 import { SCENE } from './keys.js';
+import { isTouchDevice } from '../systems/device.js';
+import TouchControls from '../ui/TouchControls.js';
 
 // HUD, pause overlay and touch buttons. Runs on top of GameScene.
-// Filled in during stages 4 (HUD), 5 (pause) and 6 (touch controls).
+// The HUD arrives in stage 4 and the pause overlay in stage 5.
 export default class UIScene extends Phaser.Scene {
   constructor() {
     super(SCENE.UI);
   }
 
-  create() {}
+  create(data) {
+    this.touchControls = null;
+    if (data?.controls && isTouchDevice()) {
+      this.touchControls = new TouchControls(this, data.controls);
+    }
+  }
+
+  update() {
+    this.touchControls?.update();
+  }
 }

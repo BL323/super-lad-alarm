@@ -9,11 +9,11 @@ The full spec is in [initial-build-brief.md](initial-build-brief.md).
 | Stage | State |
 | --- | --- |
 | 1. Scaffold | Done |
-| 2. Player and feel | Not started |
+| 2. Player and feel | Done (plus touch buttons from stage 6, pulled forward) |
 | 3. Level | Not started |
 | 4. Collectibles and score | Not started |
 | 5. Finish and flow | Not started |
-| 6. Mobile | Not started |
+| 6. Mobile | Partly done: touch buttons, multi-touch, safe-area offsets. Portrait overlay still to do |
 | 7. Polish and ship | Not started |
 
 ## Requirements
@@ -56,12 +56,42 @@ src/
   assets.js             texture keys, frame layouts and animation names
   style.css             full-viewport, no-scroll, no-gesture page styles
   art/placeholders.js   code-generated placeholder textures
+  art/animations.js     every animation, defined once and referenced by name
   scenes/               Boot, Menu, Game, UI (HUD overlay), Complete; keys.js holds scene keys
+  entities/Player.js    movement, jump feel, animation state machine, die()/respawn()
+  systems/Input.js      keyboard + touch merged into one virtual input state
+  systems/Audio.js      no-op sound wrapper (unlocks audio on first input)
   systems/Scaling.js    integer-scale frame sizing for Phaser FIT mode
-  ui/text.js            shared text helper and touch detection
+  systems/device.js     touch-device detection
+  ui/TouchControls.js   on-screen left/right/jump buttons
+  ui/safeArea.js        safe-area insets in game pixels
+  ui/text.js            shared text helper
 ```
 
-Folders for `entities/`, `level/` and the remaining `systems/` modules are filled in during later stages, following section 4 of the brief.
+`level/`, `Collectible.js`, `GameState.js`, `Checkpoints.js` and `Storage.js` arrive in later stages, following section 4 of the brief.
+
+## Testing flags
+
+- `?touch` shows the on-screen buttons on a desktop browser (they only appear on touch devices otherwise).
+- `?debug` (dev server only) shows physics bodies and a live readout of the player's state, velocity and floor contact.
+
+## Tuning movement
+
+All movement values live in `PLAYER` in `src/config.js`. Each player copies them to `player.stats`, so they can change at runtime; call `player.applyStats()` after changing the hitbox or fall speed. If you change gravity, jump velocity or run speed, update the jump-height and jump-distance comment in `config.js`, because the level rules (gap and step-up limits) come from them.
+
+Measured in the stage 2 test strip: full speed in 0.23 s, stop in 0.15 s, full jump 47.5 px, tapped jump 21.5 px. Coyote time and jump buffering both work at ~60 ms and correctly reject presses over 100 ms late or early.
+
+## Manual device checklist (for the project owner)
+
+To be completed on real phones (it can't be tested here):
+
+- [ ] Touch latency feels immediate on the left, right and jump buttons
+- [ ] Holding a direction and tapping jump at the same time works
+- [ ] Sliding a thumb from left to right switches direction without lifting
+- [ ] iOS Safari: address bar showing or hiding never causes scrolling and never hides the buttons
+- [ ] Buttons sit clear of the notch and home bar in both landscape orientations
+- [ ] Rotation re-fits the canvas
+- [ ] Frame rate stays smooth (60 fps) on a mid-range phone
 
 ## Swapping placeholder art
 
@@ -76,3 +106,8 @@ All placeholder textures are generated in `src/art/placeholders.js` under the ke
 - **Placeholder text** uses the system monospace font at 8 px (16 px for titles). It is readable but soft when upscaled; a code-generated pixel font can replace it later without touching callers (`src/ui/text.js`).
 - **Scene keys** live in `src/scenes/keys.js`; texture and animation keys in `src/assets.js`.
 - **Phaser console banner** is disabled to keep the console clean.
+- **Air control.** The brief gives only ground values, so the air has its own: `airAccel` 500 and `airDecel` 300 px/s². This gives slightly less control in the air and keeps momentum through a jump. Turning round uses the larger of acceleration and deceleration.
+- **Touch buttons came early.** They were planned for stage 6 and were built in stage 2 because the game is mobile-first. Buttons are 36 game px at 2× scale (72 CSS px, above the brief's 64 px minimum). They grow when the canvas is drawn smaller and move in from safe-area insets. Each has an invisible hit area 12 px larger than the button. Left and right share a border, so a thumb can slide between them.
+- **Keep the bottom corners clear.** The touch buttons cover roughly the bottom 42 game px at each side of the screen, which is where the ground runs. Spawn points, and anything the player must see at the very start and end of a level (where the camera stops scrolling), should sit at least ~100 px from the left edge and away from the bottom-right corner.
+- **Jump presses are latched** from key and touch events, not polled, so a tap shorter than one frame is never lost.
+- **Platform hitboxes** match the 6 px plank art rather than the full 16 px tile.
