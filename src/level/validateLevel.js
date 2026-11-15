@@ -66,7 +66,7 @@ export function validateLevel(map, rules = LEVEL_RULES, knownCollectibleTypes = 
   const spawns = ofType('spawn');
   if (spawns.length !== 1) errors.push(`expected 1 spawn, found ${spawns.length}`);
   const checkpoints = ofType('checkpoint');
-  if (checkpoints.length !== 2) errors.push(`expected 2 checkpoints, found ${checkpoints.length}`);
+  if (checkpoints.length < 2) errors.push(`expected at least 2 checkpoints, found ${checkpoints.length}`);
   const finishes = ofType('finish');
   if (finishes.length !== 1) errors.push(`expected 1 finish, found ${finishes.length}`);
   const endZone = objs.find((o) => o.name === 'end-zone');
@@ -82,7 +82,19 @@ export function validateLevel(map, rules = LEVEL_RULES, knownCollectibleTypes = 
     if (s.some((v) => v !== s[0])) errors.push('end-zone is not flat');
   }
 
-  for (const o of [...spawns, ...checkpoints, ...finishes]) {
+  const bosses = ofType('boss');
+  if (bosses.length > 1) errors.push(`expected at most 1 boss, found ${bosses.length}`);
+  for (const b of bosses) {
+    if (!endZone || b.x < endZone.x || b.x > endZone.x + endZone.width) errors.push('boss is not inside the end-zone');
+  }
+  if (bosses.length && endZone) {
+    const inArena = objs.filter(
+      (o) => (o.type === 'collectible' || o.class === 'collectible') && o.x >= endZone.x && o.x <= endZone.x + endZone.width,
+    );
+    if (inArena.length) errors.push(`${inArena.length} collectible(s) inside the boss arena`);
+  }
+
+  for (const o of [...spawns, ...checkpoints, ...finishes, ...bosses]) {
     const c = colOf(o.x);
     if (surface[c] === null) errors.push(`${o.type} "${o.name}" at col ${c} is over a gap`);
   }
@@ -114,12 +126,13 @@ export function validateLevel(map, rules = LEVEL_RULES, knownCollectibleTypes = 
   info.screens = +((cols * tw) / 320).toFixed(1);
   info.collectibles = counts;
   info.hazards = ofType('hazard').length;
+  info.boss = bosses.length ? prop(bosses[0], 'kind') : null;
   return { errors, info };
 }
 
 export function formatReport(name, { errors, info }) {
   const head = `${name}: ${errors.length ? `${errors.length} problem(s)` : 'OK'} · ${info.lengthPx ?? '?'} px (${
     info.screens ?? '?'
-  } screens) · collectibles ${JSON.stringify(info.collectibles ?? {})} · hazards ${info.hazards ?? 0}`;
+  } screens) · collectibles ${JSON.stringify(info.collectibles ?? {})} · hazards ${info.hazards ?? 0}${info.boss ? ` · boss ${info.boss}` : ''}`;
   return [head, ...errors.map((e) => `  ✗ ${e}`)].join('\n');
 }

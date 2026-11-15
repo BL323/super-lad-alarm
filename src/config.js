@@ -83,6 +83,25 @@ export const HUD = {
   bumpMs: 90,
 };
 
+// Train Conductor boss fight. Arrays are per phase: [before 1st hit, after 1st, after 2nd].
+// He gets faster each time he's stomped. Three stomps beat him; dying resets him.
+export const BOSS = {
+  hits: 3,
+  introMs: 1200, // "TICKETS PLEASE!" before he starts
+  walkSpeed: [30, 40, 52], // px/s, plodding towards the player
+  walkMs: [2400, 2000, 1600], // walking (and throwing) before each wind-up
+  throwEveryMs: [1200, 1000, 850],
+  ticketsPerVolley: [1, 2, 3],
+  ticketSpread: 32, // px between tickets in a volley
+  ticketFlightMs: 1100, // time from throw to landing; the floor marker shows where
+  windupMs: [700, 550, 450], // whistle telegraph before the dash
+  dashSpeed: [150, 185, 220], // px/s; he's dizzy after hitting the arena edge
+  dizzyMs: 1600, // stomp window
+  hurtMs: 700,
+  stompBounce: -260, // player bounce off his cap
+  body: { width: 12, height: 26, offsetX: 2, offsetY: 4 },
+};
+
 // Delay between touching the finish and the Complete screen (celebration).
 export const FINISH_DELAY_MS = 1200;
 

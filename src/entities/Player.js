@@ -124,6 +124,15 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
+  /** Bounce upwards (e.g. off the Conductor's cap). Holding jump keeps the full bounce. */
+  bounce(velocityY) {
+    if (this.dead) return;
+    this.body.setVelocityY(velocityY);
+    this.isJumping = true;
+    this.jumpCut = false;
+    this.lastGroundedAt = -Infinity;
+  }
+
   /** The single death path (spikes, falls and, later, enemies all come here). */
   die() {
     if (this.dead) return;

@@ -7,6 +7,7 @@ import VirtualInput from '../systems/Input.js';
 import { createGameState, addPickup, finalTime } from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
 import Checkpoints from '../systems/Checkpoints.js';
+import BossArena from '../systems/BossArena.js';
 import Player from '../entities/Player.js';
 import Collectible, { collectibleTypes } from '../entities/Collectible.js';
 import { getLevel } from '../level/levels.js';
@@ -37,7 +38,7 @@ export default class GameScene extends Phaser.Scene {
     this.spawnCollectibles();
 
     // Finish: reaching it completes the level unless `finishLocked` is set
-    // (a boss fight will hold it until the boss is beaten).
+    // (the boss holds it until he is beaten).
     this.finishLocked = false;
     if (this.level.finish) {
       const f = this.level.finish;
@@ -45,6 +46,23 @@ export default class GameScene extends Phaser.Scene {
       const trigger = this.add.zone(f.x, GAME_HEIGHT / 2, 16, GAME_HEIGHT);
       this.physics.add.existing(trigger, true);
       this.physics.add.overlap(this.player, trigger, () => this.completeLevel());
+    }
+
+    // Boss: the Train Conductor guards the end zone and holds the finish.
+    this.arena = null;
+    if (this.level.boss && this.level.endZone) {
+      this.arena = new BossArena(this, {
+        zone: this.level.endZone,
+        boss: this.level.boss,
+        player: this.player,
+        ground: this.level.layers.ground,
+        levelWidth: this.level.width,
+      });
+      this.setFinishLocked(true);
+      this.events.on('boss-reset', () => {
+        this.inEndZone = false; // re-arm onEnterEndZone for the next attempt
+      });
+      this.events.on('boss-defeated', () => this.setFinishLocked(false));
     }
 
     const cam = this.cameras.main;
@@ -68,12 +86,15 @@ export default class GameScene extends Phaser.Scene {
     if (!this.gameState.completed) this.gameState.elapsedMs += delta;
     this.controls.update();
     this.player.update(time, delta);
+    this.arena?.update(time, delta);
 
     this.level.hills.tilePositionX = this.cameras.main.scrollX * PARALLAX.hillsFactor;
     this.updateSecrets();
 
     const { endZone } = this.level;
-    if (endZone && !this.inEndZone && endZone.contains(this.player.x, this.player.y)) {
+    // Fully inside (back edge past the zone edge), so the arena wall can close behind.
+    const inside = endZone && this.player.body.left >= endZone.x + 2 && endZone.contains(this.player.x, this.player.y);
+    if (inside && !this.inEndZone && !this.player.dead) {
       this.inEndZone = true;
       this.onEnterEndZone();
     }
@@ -82,7 +103,8 @@ export default class GameScene extends Phaser.Scene {
       const b = this.player.body;
       this.debugText.setText(
         `${this.player.moveState} x ${this.player.x.toFixed(0)} (col ${Math.floor(this.player.x / 16)}) ` +
-          `vx ${b.velocity.x.toFixed(0)} vy ${b.velocity.y.toFixed(0)} cp ${this.gameState.checkpoint?.name ?? '-'}`,
+          `vx ${b.velocity.x.toFixed(0)} vy ${b.velocity.y.toFixed(0)} cp ${this.gameState.checkpoint?.name ?? '-'}` +
+          (this.arena ? ` boss ${this.arena.status}/${this.arena.boss.state} hp ${this.arena.boss.hp}` : ''),
       );
     }
   }
@@ -134,11 +156,16 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
+  setFinishLocked(locked) {
+    this.finishLocked = locked;
+    this.finish?.setAlpha(locked ? 0.45 : 1);
+  }
+
   /**
-   * Boss hook. Called once when the player first enters the `end-zone`
-   * rectangle at Parkstone. In v1 it does nothing. Later, the Train Conductor
-   * fight starts here: lock the camera to the zone and hold back the finish
-   * until he is beaten.
+   * Called when the player enters the `end-zone` rectangle at Parkstone (and
+   * again after each failed boss attempt): starts the Train Conductor fight.
    */
-  onEnterEndZone() {}
+  onEnterEndZone() {
+    this.arena?.start();
+  }
 }

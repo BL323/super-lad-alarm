@@ -83,6 +83,7 @@ export function loadLevel(scene, levelDef) {
   const endZoneObj = objects.find((o) => o.name === 'end-zone');
   const finishObj = ofType('finish')[0];
   const spawnObj = ofType('spawn')[0];
+  const bossObj = ofType('boss')[0];
 
   return {
     map,
@@ -95,6 +96,7 @@ export function loadLevel(scene, levelDef) {
     finish: finishObj ? point(finishObj) : null,
     endZone: endZoneObj ? rectOf(endZoneObj) : null,
     secrets: ofType('secret').map(rectOf),
+    boss: bossObj ? { kind: prop(bossObj, 'kind'), x: bossObj.x, y: bossObj.y } : null,
     collectibles: ofType('collectible').map((o) => ({ x: o.x, y: o.y, type: prop(o, 'type') })),
   };
 }

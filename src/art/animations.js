@@ -7,6 +7,7 @@ import {
   PLAYER_FRAMES,
   PINT_FRAME,
   ESPRESSO_FRAME,
+  CONDUCTOR_FRAME,
 } from '../assets.js';
 
 // Player movement animations, created for every character.
@@ -35,6 +36,7 @@ const DEFS = [
     frameRate: 3,
     repeat: -1,
   },
+  { key: ANIM.CONDUCTOR_WALK, texture: TEX.CONDUCTOR, frames: CONDUCTOR_FRAME.walk, frameRate: 6, repeat: -1 },
 ];
 
 export function registerAnimations(scene) {

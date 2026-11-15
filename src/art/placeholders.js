@@ -14,6 +14,7 @@ import {
   PINT_FRAME,
   ESPRESSO_FRAME,
   CHECKPOINT_FRAME,
+  CONDUCTOR_FRAME,
   TILESET,
 } from '../assets.js';
 import { drawPixelText, measurePixelText } from './pixelFont.js';
@@ -566,6 +567,172 @@ function makePub(scene, id, def) {
   });
 }
 
+// --- Train Conductor (boss) -------------------------------------------------
+// Navy uniform, peaked cap with a gold band, grey moustache, silver whistle.
+// N navy, n sleeve, G gold, S skin, r cheeks, K black, W shirt, M moustache,
+// C whistle, Y ticket.
+const CONDUCTOR_PALETTE = {
+  N: '#1d2b53',
+  n: '#3b4a8a',
+  G: '#ffcd75',
+  S: '#f4c49a',
+  r: '#e43b44',
+  K: '#1a1c2c',
+  W: '#fff1e8',
+  M: '#83769c',
+  C: '#c2c3c7',
+  Y: '#f4e4c1',
+};
+const CONDUCTOR_RED_FACE = { ...CONDUCTOR_PALETTE, S: '#f7907a' };
+
+const C_HEAD = [
+  '................',
+  '................',
+  '.....NNNNNN.....',
+  '....NNNNNNNN....',
+  '....NGGGGGGN....',
+  '...KKKKKKKKKK...',
+  '....SSSSSSSS....',
+  '....SKSSSSKS....',
+  '....rSSSSSSr....',
+  '....SMMMMMMS....',
+  '.....SSKKSS.....',
+  '......SSSS......',
+];
+const C_TORSO = [
+  '....NNWWWWNN....',
+  '...NNNNWWNNNN...',
+  '..NNNNNNNNNNNN..',
+  '..NnNNNGNNNNnN..',
+  '..NnNNNNNNNNnN..',
+  '..NnNNNGNNNNnN..',
+  '..SnNNNNNNNNnS..',
+  '...KKKKGKKKKK...',
+  '...NNNNNNNNNN...',
+  '...NNNNGNNNNN...',
+];
+const C_LEGS = {
+  stand: [
+    '...NNNN..NNNN...',
+    '...NNNN..NNNN...',
+    '...NNN....NNN...',
+    '...NNN....NNN...',
+    '...NNN....NNN...',
+    '...NNN....NNN...',
+    '...NNN....NNN...',
+    '..KKKK....KKKK..',
+    '................',
+    '................',
+  ],
+  stride: [
+    '...NNNN..NNNN...',
+    '..NNNN....NNNN..',
+    '..NNN......NNN..',
+    '.NNN........NNN.',
+    '.NNN........NNN.',
+    '.NNN........NNN.',
+    '.NNN........NNN.',
+    'KKKK........KKKK',
+    '................',
+    '................',
+  ],
+  pass: [
+    '...NNNNNNNNNN...',
+    '....NNNNNNNN....',
+    '.....NNNNNN.....',
+    '.....NNN.NN.....',
+    '.....NNN.NN.....',
+    '.....NNN.NN.....',
+    '.....NNN.NN.....',
+    '....KKKK.KKK....',
+    '................',
+    '................',
+  ],
+};
+const shiftR = (row) => '.' + row.slice(0, 15);
+const shiftL = (row) => row.slice(1) + '.';
+const withRows = (rows, changes) => rows.map((r, i) => changes[i] ?? r);
+
+// Frame order must match CONDUCTOR_FRAME in src/assets.js.
+const CONDUCTOR_ART = [
+  // 0 idle
+  { rows: [...C_HEAD, ...C_TORSO, ...C_LEGS.stand] },
+  // 1–2 walk
+  { rows: [...C_HEAD, ...C_TORSO, ...C_LEGS.stride] },
+  { rows: [...C_HEAD, ...C_TORSO, ...C_LEGS.pass] },
+  // 3 wind-up: whistle to his lips, arm raised, red in the face
+  {
+    palette: CONDUCTOR_RED_FACE,
+    rows: [
+      ...withRows(C_HEAD, { 10: '.....SSKCCC.....', 11: '......SSSSS.....' }),
+      ...withRows(C_TORSO, { 0: '....NNWWWWNNn...', 1: '...NNNNWWNNNNn..', 6: '..SnNNNNNNNNnN..' }),
+      ...C_LEGS.stand,
+    ],
+  },
+  // 4 dash: leaning forward, mid-stride
+  { rows: [...C_HEAD.map(shiftR), ...C_TORSO.map((r, i) => (i < 3 ? shiftR(r) : r)), ...C_LEGS.stride] },
+  // 5 dizzy: cap knocked askew, blank stare
+  {
+    rows: [
+      ...withRows(C_HEAD, {
+        2: shiftL(C_HEAD[2]),
+        3: shiftL(C_HEAD[3]),
+        4: shiftL(C_HEAD[4]),
+        5: shiftL(C_HEAD[5]),
+        7: '....SWSSSSWS....',
+        10: '.....SKKKKS.....',
+      }),
+      ...C_TORSO,
+      ...C_LEGS.stand,
+    ],
+  },
+  // 6 throw: arm up with a ticket
+  {
+    rows: [
+      ...withRows(C_HEAD, { 8: '....rSSSSSSr..Y.', 9: '....SMMMMMMS.SY.', 10: '.....SSKKSS..S..', 11: '......SSSS...n..' }),
+      ...withRows(C_TORSO, { 0: '....NNWWWWNNn...', 1: '...NNNNWWNNNNn..', 6: '..SnNNNNNNNNnN..' }),
+      ...C_LEGS.stand,
+    ],
+  },
+];
+
+function makeConductor(scene) {
+  const { width, height, count } = CONDUCTOR_FRAME;
+  makeSheet(scene, TEX.CONDUCTOR, width, height, count, (ctx, i) => {
+    const f = CONDUCTOR_ART[i];
+    drawRows(ctx, f.rows, 0, 0, f.palette ?? CONDUCTOR_PALETTE);
+  });
+}
+
+function makeTicket(scene) {
+  makeImage(scene, TEX.TICKET, 8, 5, (ctx) => {
+    rect(ctx, C.cream, 0, 0, 8, 5);
+    rect(ctx, '#e43b44', 0, 1, 8, 1);
+    rect(ctx, C.creamDark, 0, 4, 8, 1);
+    px(ctx, C.ink, 5, 2); // punched hole
+  });
+}
+
+function makeTicketMarker(scene) {
+  makeImage(scene, TEX.TICKET_MARKER, 12, 3, (ctx) => {
+    rect(ctx, C.ink, 3, 0, 6, 1);
+    rect(ctx, C.ink, 1, 1, 10, 1);
+    rect(ctx, C.ink, 3, 2, 6, 1);
+  });
+}
+
+function makeDizzyStars(scene) {
+  makeImage(scene, TEX.DIZZY_STARS, 16, 5, (ctx) => {
+    for (const x of [2, 8, 13]) {
+      px(ctx, C.yellow, x, 1);
+      px(ctx, C.yellow, x - 1, 2);
+      px(ctx, C.white, x, 2);
+      px(ctx, C.yellow, x + 1, 2);
+      px(ctx, C.yellow, x, 3);
+    }
+  });
+}
+
 // Station nameboard: cream lettering on green, on two posts.
 export function ensureSignTexture(scene, text) {
   const key = signTextureKey(text);
@@ -592,6 +759,10 @@ const BUILDERS = {
   [TEX.TILES]: makeTiles,
   [TEX.HILLS]: makeHills,
   [TEX.EASEL]: makeEasel,
+  [TEX.CONDUCTOR]: makeConductor,
+  [TEX.TICKET]: makeTicket,
+  [TEX.TICKET_MARKER]: makeTicketMarker,
+  [TEX.DIZZY_STARS]: makeDizzyStars,
 };
 
 /** Generate every placeholder texture that has not already been loaded as real art. */

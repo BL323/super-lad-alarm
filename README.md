@@ -89,6 +89,9 @@ src/
   entities/Collectible.js collectible type registry and pickup pop
   systems/GameState.js  plain run state (clock, pints, checkpoint) and final-time maths
   systems/Checkpoints.js railway-signal checkpoints
+  systems/BossArena.js  Train Conductor fight: camera lock, wall, tickets, stomp/contact rules, reset, win
+  entities/Conductor.js the boss's state machine (walk/throw, wind-up, dash, dizzy, hurt, defeated)
+  ui/BossBar.js         "CONDUCTOR" label and health pips
   systems/Input.js      keyboard + touch merged into one virtual input state
   systems/Audio.js      no-op sound wrapper (unlocks audio on first input)
   systems/Scaling.js    integer-scale frame sizing for Phaser FIT mode
@@ -113,6 +116,20 @@ src/
 All movement values live in `PLAYER` in `src/config.js`. Each player copies them to `player.stats`, so they can change at runtime; call `player.applyStats()` after changing the hitbox or fall speed. If you change gravity, jump velocity or run speed, update the jump-height and jump-distance comment in `config.js`, because the level rules (gap and step-up limits) come from them.
 
 Measured in the stage 2 test strip: full speed in 0.23 s, stop in 0.15 s, full jump 47.5 px, tapped jump 21.5 px. Coyote time and jump buffering both work at ~60 ms and correctly reject presses over 100 ms late or early.
+
+## Boss: the Train Conductor
+
+Naylor's arch-nemesis guards the last screen at Parkstone, between the player and The Avocet.
+
+- **Arena.** Walking into the `end-zone` starts the fight. The camera pans to and locks on that screen, a wall closes behind the player, and "TICKETS PLEASE!" appears with a CONDUCTOR bar of three health pips. The finish is locked (dimmed) until he's beaten.
+- **His cycle:** walk towards you, throwing tickets (from the very first phase) → wind-up (flashes red, red "!" over his head) → dash across the platform → hit the arena edge and go dizzy (stars over his cap) → repeat.
+- **Tickets** are lobbed so they land on the player's position after 1.1 s. A dark marker on the floor shows exactly where each will land.
+- **Beating him:** land on his cap while he's dizzy. Three stomps win, and he gets faster after each (walk speed, throw rate, tickets per volley, a shorter wind-up and a faster dash). Landing on his cap at other times just bounces you off harmlessly.
+- **Dying:** touching him from the side while he walks, winds up or dashes, or being hit by a ticket, goes through the usual `die()`. Any death resets the whole fight (owner's decision): he's back to full health at his start, the wall opens, and you respawn at the Parkstone checkpoint just outside and walk back in.
+- **Time:** the clock keeps running through the fight. Beating him gives no time bonus (owner's decision).
+- **When he's beaten** he stomps off, "CONDUCTOR BEATEN!" appears, and the finish unlocks.
+
+All tuning lives in `BOSS` in `src/config.js`, with values per phase.
 
 ## Mobile
 
@@ -139,7 +156,7 @@ To be completed on real phones (it can't be tested here):
 A level is a Tiled JSON map with:
 
 - **Tile layers** `background` (no collision: canopy posts, river), `ground` (every tile collides) and `foreground` (drawn over the player: station canopy). They use the tileset `tiles`, which is the generated `tiles` texture (layout in `src/assets.js`).
-- **Object layer `objects`:** `spawn`, two `checkpoint`s (property `station`), `collectible`s (property `type`: `pint` or `espresso`), `hazard`s (property `kind`: `glass` or `water`), a `zone` named `end-zone`, a `finish`, and optional `secret` rectangles (the foreground fades while the player is inside). Points for spawn, checkpoints and finish are at the player's feet.
+- **Object layer `objects`:** `spawn`, at least two `checkpoint`s (property `station`), `collectible`s (property `type`: `pint` or `espresso`), `hazard`s (property `kind`: `glass` or `water`), a `zone` named `end-zone`, an optional `boss` (property `kind`: `conductor`) inside it, a `finish`, and optional `secret` rectangles (the foreground fades while the player is inside). Points for spawn, checkpoints and finish are at the player's feet.
 - **Object layer `decor`:** `pub` (property `pub`, an id from `PUBS` in `src/assets.js`), `sign` (property `text`) and `easel`.
 
 Maps are 12 rows (192 px) against a 180 px screen, so the loader shifts everything up 12 px. Only sky is cut off.
@@ -148,7 +165,7 @@ Maps are 12 rows (192 px) against a 180 px screen, so the loader shifts everythi
 
 **Adding a level:** create its JSON in `public/assets/levels/`, add an entry to `src/level/levels.js`, and set the previous level's `next` to its id. `npm run validate:levels` checks it.
 
-**Validation rules** (from the jump numbers in `config.js`): gaps of at most 3 tiles, step-ups of at most 2 tiles going right, a safe tile at the same height either side of every glass hazard, one spawn, two checkpoints, one finish inside a flat `end-zone`. `npm run build` refuses to build if any level fails, and the dev build logs an error at boot.
+**Validation rules** (from the jump numbers in `config.js`): gaps of at most 3 tiles, step-ups of at most 2 tiles going right, a safe tile at the same height either side of every glass hazard, one spawn, at least two checkpoints, one finish inside a flat `end-zone`, at most one boss (inside the end zone), and no collectibles inside a boss arena (so the missed-pint penalty never punishes the fight). `npm run build` refuses to build if any level fails, and the dev build logs an error at boot.
 
 ## Game flow
 
@@ -169,7 +186,7 @@ There is no pause feature (removed at the owner's request). When the page is hid
 
 ## Swapping placeholder art
 
-All placeholder textures are generated in `src/art/placeholders.js` under the keys in `src/assets.js`: `player-<character id>` (e.g. `player-naylor`), `pint`, `espresso-martini`, `glass`, `checkpoint`, `finish`, `tiles`, `hills`, `easel`, `pub-<id>`, `sign-<text>`. To use real art, load an image or spritesheet under the same key in `BootScene.preload()`; the placeholder for that key is then skipped. Player sheets must follow `PLAYER_FRAME` / `PLAYER_FRAMES` (16×16 frames: idle 0–1, run 2–5, jump 6, fall 7), or update those to match the new sheet.
+All placeholder textures are generated in `src/art/placeholders.js` under the keys in `src/assets.js`: `player-<character id>` (e.g. `player-naylor`), `pint`, `espresso-martini`, `glass`, `checkpoint`, `finish`, `tiles`, `hills`, `easel`, `pub-<id>`, `sign-<text>`, `conductor` (16×32 frames, see `CONDUCTOR_FRAME`), `ticket`, `ticket-marker`, `dizzy-stars`. To use real art, load an image or spritesheet under the same key in `BootScene.preload()`; the placeholder for that key is then skipped. Player sheets must follow `PLAYER_FRAME` / `PLAYER_FRAMES` (16×16 frames: idle 0–1, run 2–5, jump 6, fall 7), or update those to match the new sheet.
 
 ## Story and theme
 
@@ -180,7 +197,8 @@ Background story: [docs/story.md](docs/story.md). Naylor's "Lad Alarm Train Craw
 | Start | Dorchester station, Brewhouse pub behind |
 | Checkpoint 1 | Wool station, The Black Bear (angry locals in the windows, scenery only) |
 | Checkpoint 2 | Wareham station, The Old Granary, then the river (easel floating in it, scenery) |
-| `end-zone` (boss later) | Parkstone platform, where the Train Conductor will be fought |
+| Checkpoint 3 | Parkstone, just outside the boss arena |
+| `end-zone` | The Train Conductor boss arena, the last screen at Parkstone |
 | Finish | Parkstone, outside The Avocet |
 | Platforms | Parked British carriages (roof-hopping); gaps between carriages are the jumps |
 | Coin | Pint of stout; every one missed adds 2 s to the final time |
@@ -215,7 +233,8 @@ The game title stays **Super Lad Alarm**.
 - **Timed runs instead of score (owner's change, replacing the brief's points and best score).** The HUD shows the pint counter at top left and a running clock (`m:ss.t`) at top right. The clock runs from the start of the level to the finish and keeps going through deaths and respawns. Final time = clock + 2 s × missed pints − 5 s if the martini was found, never below zero. The penalty is `TIMING.missedPintPenaltyMs` in `config.js`, and the martini bonus is `timeBonusMs` on its registry entry. The maths is in `finalTime()` in `src/systems/GameState.js`.
 - **Character select (added at the owner's request).** Naylor plus two placeholder lads, looks only. The choice is kept for the session (Phaser registry) so PLAY AGAIN keeps the same lad. Nothing is saved between sessions.
 - **One text style.** All screens and the HUD now use the pixel bitmap font (`addPixelText`). The system font remains only for the `?debug` readout.
-- **Completion.** Touching the finish (a full-height trigger) stops the clock, flashes the screen, lets the lad coast to a stop and shows the Complete screen 1.2 s later. The screen shows the time, the missed-pint penalty, the martini bonus and the final time. `GameScene.finishLocked` holds the finish back, ready for the boss fight.
+- **Completion.** Touching the finish (a full-height trigger) stops the clock, flashes the screen, lets the lad coast to a stop and shows the Complete screen 1.2 s later. The screen shows the time, the missed-pint penalty, the martini bonus and the final time. `GameScene.finishLocked` holds the finish back until the Train Conductor is beaten (the sign is dimmed while locked).
 - **Portrait freeze without a pause feature.** The rotate overlay sleeps Phaser's game loop rather than pausing scenes, because there is no pause feature. On waking it resets the frame delta first, otherwise the first frame back would add all the portrait time to the clock.
+- **Boss fight design (owner's choices: resets on death, no time bonus, tickets from the start).** Only a dizzy Conductor can be stomped, so the fight needs nothing beyond left, right and jump. The arena is the level's last screen (cols 160–179), so the finish (col 173) and the respawn point stay clear of the touch buttons. When he's dizzy against the left wall he sits behind the semi-transparent left buttons on phones. He's still visible, and moving his stopping point inwards would create a corner that's safe from his dash.
 - **No persistence and no pause (owner's changes).** The brief's localStorage best score and its pause button/overlay (P/Esc) were removed. Nothing is written to storage.
 - **Collected items stay collected** across deaths, and the pint count never goes down.

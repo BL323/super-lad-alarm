@@ -4,6 +4,7 @@ import { TEX } from '../assets.js';
 import { addPixelText } from './text.js';
 import { formatTime, formatSeconds } from '../systems/GameState.js';
 import { safeAreaInGame } from './safeArea.js';
+import BossBar from './BossBar.js';
 
 // Pint counter (collected/total) at top left, run timer at top right. The
 // counter updates on the GameScene's 'pickup' event and bumps; the timer
@@ -20,6 +21,8 @@ export default class Hud {
     this.toast = addPixelText(scene, GAME_WIDTH / 2, 40, '', { scale: HUD.textScale, tint: 0xffcd75 })
       .setOrigin(0.5)
       .setAlpha(0);
+
+    this.bossBar = new BossBar(scene, gameScene, (text) => this.showToast(text));
 
     this.layout();
     this.refresh();

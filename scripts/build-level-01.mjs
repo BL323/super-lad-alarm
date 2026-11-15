@@ -4,7 +4,7 @@
 // Tiled, stop using this script for that level so your edits aren't overwritten.
 //
 // Story: Dorchester (start) → Wool (checkpoint 1) → Wareham (checkpoint 2)
-// → Parkstone (end zone, boss later) → finish at The Avocet.
+// → Parkstone (checkpoint 3, then the Train Conductor boss arena) → finish at The Avocet.
 
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -106,6 +106,7 @@ const espresso = (col, row) =>
 /** Broken glass sitting on the surface at `surfaceRow`. */
 const glass = (col, surfaceRow = SURFACE) =>
   addObject('hazard', 'glass', col * TS, (surfaceRow - 1) * TS, TS, TS, { kind: 'glass' });
+const boss = (col, kind) => addObject('boss', kind, ...feet(col), 0, 0, { kind });
 const zone = (name, c0, c1) => addObject('zone', name, c0 * TS, 0, (c1 - c0 + 1) * TS, ROWS * TS);
 const secret = (c0, c1, r0, r1) => addObject('secret', 'secret', c0 * TS, r0 * TS, (c1 - c0 + 1) * TS, (r1 - r0 + 1) * TS);
 const pub = (col, id) => addObject('pub', id, ...feet(col), 0, 0, { pub: id }, decor);
@@ -192,9 +193,13 @@ pint(150, 7);
 pint(153, 6); // 3-tile gap at 152–154
 
 platform(155, 179);
-zone('end-zone', 155, 174); // flat, one screen wide; the boss fight goes here later
-sign(158, 'PARKSTONE');
-pint(160, 9);
+checkpoint(158, 'Parkstone'); // respawn just outside the boss arena
+sign(156, 'PARKSTONE');
+pint(157, 9);
+// Boss arena: the last screen (cols 160–179). The camera locks to it, a wall
+// closes behind the player, and the finish is held until the Conductor is beaten.
+zone('end-zone', 160, 179);
+boss(176, 'conductor');
 finish(173); // kept clear of the bottom-right jump button
 pub(176, 'avocet');
 

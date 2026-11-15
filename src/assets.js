@@ -13,6 +13,10 @@ export const TEX = {
   HILLS: 'hills', // parallax backdrop
   EASEL: 'easel',
   FONT: 'font-pixel', // bitmap font texture (3×5 glyphs with a drop shadow)
+  CONDUCTOR: 'conductor', // the Train Conductor boss
+  TICKET: 'ticket', // his thrown tickets
+  TICKET_MARKER: 'ticket-marker', // where a ticket will land
+  DIZZY_STARS: 'dizzy-stars',
 };
 
 // Bitmap font key for crisp HUD text (built from src/art/pixelFont.js at boot).
@@ -70,6 +74,19 @@ export const PLAYER_FRAMES = {
   fall: [7],
 };
 
+// Train Conductor sheet: 16×32 frames, facing right.
+export const CONDUCTOR_FRAME = {
+  width: 16,
+  height: 32,
+  idle: 0,
+  walk: [1, 2],
+  windup: 3, // whistle to his lips, red-faced
+  dash: 4,
+  dizzy: 5,
+  throw: 6,
+  count: 7,
+};
+
 export const PINT_FRAME = { width: 16, height: 16, count: 4 };
 export const ESPRESSO_FRAME = { width: 16, height: 16, count: 2 };
 export const CHECKPOINT_FRAME = { width: 16, height: 32, inactive: 0, active: 1 };
@@ -106,4 +123,5 @@ export const TILESET = {
 export const ANIM = {
   PINT_SHINE: 'pint-shine',
   ESPRESSO_SHINE: 'espresso-shine',
+  CONDUCTOR_WALK: 'conductor-walk',
 };
