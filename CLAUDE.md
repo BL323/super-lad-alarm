@@ -18,3 +18,4 @@
 - Scene flow: Menu → CharacterSelect → Game(+UI) → Complete. Selected lad lives in `registry.get('characterId')`.
 - Listeners on `scene.events` / `game.events` / `scale` must be removed on SHUTDOWN (emitters outlive restarts).
 - Runs are timed, not scored: no points, no saved best, no pause (owner's decision, overrides the brief). Final time = clock + 2 s per missed pint − bonus `timeBonusMs`; see `finalTime()` in `src/systems/GameState.js`. Don't add localStorage.
+- Portrait freeze uses `game.loop.sleep()`/`wake()` (src/systems/mobile.js); always `loop.resetDelta()` before `wake()` or the clock jumps.

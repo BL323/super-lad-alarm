@@ -13,7 +13,7 @@ The full spec is in [initial-build-brief.md](initial-build-brief.md).
 | 3. Level | Done: the full level, Dorchester to Parkstone |
 | 4. Collectibles and timing | Done (score replaced by a timer at the owner's request) |
 | 5. Finish and flow | Done (plus a character select screen) |
-| 6. Mobile | Partly done: touch buttons, multi-touch, safe-area offsets. Portrait overlay still to do |
+| 6. Mobile | Done |
 | 7. Polish and ship | Not started |
 
 ## Requirements
@@ -79,6 +79,7 @@ src/
   systems/Audio.js      no-op sound wrapper (unlocks audio on first input)
   systems/Scaling.js    integer-scale frame sizing for Phaser FIT mode
   systems/device.js     touch-device detection
+  systems/mobile.js     iOS gesture blocking and the portrait rotate overlay (freezes the game)
   ui/Hud.js             pint counter, run timer, bonus toast
   ui/Button.js          pixel-font button for touch, mouse and keyboard focus
   ui/backdrop.js        sky, hills and platform behind the menu screens
@@ -99,6 +100,13 @@ All movement values live in `PLAYER` in `src/config.js`. Each player copies them
 
 Measured in the stage 2 test strip: full speed in 0.23 s, stop in 0.15 s, full jump 47.5 px, tapped jump 21.5 px. Coyote time and jump buffering both work at ~60 ms and correctly reject presses over 100 ms late or early.
 
+## Mobile
+
+- **Landscape only.** On a touch device held in portrait, a "ROTATE YOUR PHONE" overlay covers the page and the whole game freezes: rendering, physics and the run clock. Turning back to landscape carries on from the same frame, and no portrait time is added to the clock. Desktop windows never show the overlay.
+- **Touch controls:** left and right at bottom left, jump at bottom right. They're 72 CSS px at 640×360 (the brief asks for at least 64), support several fingers at once, and move in away from notches and home bars.
+- **Browser gestures blocked:** no scrolling, pull-to-refresh, pinch or double-tap zoom, text selection or long-press menu. This uses CSS `touch-action: none` plus JS listeners, because iOS Safari ignores `user-scalable=no`.
+- **Viewport:** `100dvh` and `viewport-fit=cover`, and the canvas re-fits on resize and rotation.
+
 ## Manual device checklist (for the project owner)
 
 To be completed on real phones (it can't be tested here):
@@ -108,7 +116,8 @@ To be completed on real phones (it can't be tested here):
 - [ ] Sliding a thumb from left to right switches direction without lifting
 - [ ] iOS Safari: address bar showing or hiding never causes scrolling and never hides the buttons
 - [ ] Buttons sit clear of the notch and home bar in both landscape orientations
-- [ ] Rotation re-fits the canvas
+- [ ] Rotation re-fits the canvas; portrait shows the rotate overlay and the clock stops until you turn back
+- [ ] Pinch and double-tap never zoom the page (especially iOS Safari)
 - [ ] Frame rate stays smooth (60 fps) on a mid-range phone
 
 ## Levels
@@ -192,5 +201,6 @@ The game title stays **Super Lad Alarm**.
 - **Character select (added at the owner's request).** Naylor plus two placeholder lads, looks only. The choice is kept for the session (Phaser registry) so PLAY AGAIN keeps the same lad. Nothing is saved between sessions.
 - **One text style.** All screens and the HUD now use the pixel bitmap font (`addPixelText`). The system font remains only for the `?debug` readout.
 - **Completion.** Touching the finish (a full-height trigger) stops the clock, flashes the screen, lets the lad coast to a stop and shows the Complete screen 1.2 s later. The screen shows the time, the missed-pint penalty, the martini bonus and the final time. `GameScene.finishLocked` holds the finish back, ready for the boss fight.
+- **Portrait freeze without a pause feature.** The rotate overlay sleeps Phaser's game loop rather than pausing scenes, because there is no pause feature. On waking it resets the frame delta first, otherwise the first frame back would add all the portrait time to the clock.
 - **No persistence and no pause (owner's changes).** The brief's localStorage best score and its pause button/overlay (P/Esc) were removed. Nothing is written to storage.
 - **Collected items stay collected** across deaths, and the pint count never goes down.

@@ -3,6 +3,7 @@ import './style.css';
 import { GAME_WIDTH, GAME_HEIGHT, PHYSICS, INPUT, COLORS, GAME_TITLE } from './config.js';
 import { setupScaling } from './systems/Scaling.js';
 import Audio from './systems/Audio.js';
+import { blockBrowserGestures, setupOrientationGuard } from './systems/mobile.js';
 import BootScene from './scenes/BootScene.js';
 import MenuScene from './scenes/MenuScene.js';
 import CharacterSelectScene from './scenes/CharacterSelectScene.js';
@@ -43,6 +44,8 @@ const game = new Phaser.Game({
 
 scaling.attach(game);
 Audio.init(game);
+blockBrowserGestures();
+setupOrientationGuard(game, document.getElementById('rotate'));
 
 if (import.meta.env.DEV) {
   window.__game = game; // handy for poking at state from the console
