@@ -39,29 +39,50 @@ export const PUBS = {
   avocet: { name: 'THE AVOCET', wall: 'render', roof: '#29366f' },
 };
 
-// Playable characters. Looks only: everyone shares the same movement and
-// hitbox. Palette letters: R cap/hair, S skin, K eyes, B top, D trousers, W shoes.
+// Playable characters: all Naylor (red hair, same skin tone) in different
+// outfits. Looks only: everyone shares the same movement and hitbox.
+// `look` picks the head/torso shapes in src/art/placeholders.js (PLAYER_LOOKS).
+// Palette letters: S skin, K eyes/black, H hair, B jacket/top, C shirt/white,
+// T tie, Y tie print, P badge, G gold braid, L polo collar, D trousers, W shoes.
 // Real art: load a spritesheet under playerTextureKey(id) with the frame
 // layout below and the placeholder for that character is skipped.
+const SKIN = '#f4c49a';
+const HAIR = '#d65a1e'; // Naylor's red hair
 export const CHARACTERS = [
   {
-    id: 'naylor',
-    name: 'NAYLOR',
-    palette: { R: '#e43b44', S: '#f4c49a', K: '#1a1c2c', B: '#3b5dc9', D: '#29366f', W: '#5d275d' },
+    id: 'senior',
+    name: 'SENIOR',
+    look: 'senior', // green school blazer, white shirt, green patterned tie, crest
+    palette: {
+      S: SKIN, K: '#1a1c2c', H: HAIR,
+      B: '#1f6b3a', C: '#fff1e8', T: '#0e4d2a', Y: '#ffcd75', P: '#ffcd75',
+      D: '#3a3a46', W: '#1a1c2c',
+    },
   },
   {
-    id: 'lad-2',
-    name: 'LAD 2',
-    palette: { R: '#7e4a2a', S: '#f4c49a', K: '#1a1c2c', B: '#008751', D: '#5f574f', W: '#1a1c2c' },
+    id: 'sea-lord',
+    name: 'SEA LORD',
+    look: 'sea-lord', // modern navy admiral: white-topped peaked cap, navy jacket, gold rings
+    palette: {
+      S: SKIN, K: '#1a1c2c', H: HAIR,
+      B: '#1d2b53', C: '#fff1e8', G: '#ffcd75',
+      D: '#1d2b53', W: '#1a1c2c',
+    },
   },
   {
-    id: 'lad-3',
-    name: 'LAD 3',
-    palette: { R: '#ffa300', S: '#c88a5a', K: '#1a1c2c', B: '#7e2553', D: '#29366f', W: '#ab5236' },
+    id: 'casual',
+    name: 'CASUAL',
+    look: 'casual', // blue polo, red chinos
+    palette: {
+      S: SKIN, K: '#1a1c2c', H: HAIR,
+      B: '#3b7dd8', L: '#9cc8ff',
+      D: '#be3a34', W: '#fff1e8',
+    },
   },
 ];
-export const DEFAULT_CHARACTER = CHARACTERS[0].id;
-export const getCharacter = (id) => CHARACTERS.find((c) => c.id === id) ?? CHARACTERS[0];
+export const DEFAULT_CHARACTER = 'casual';
+export const getCharacter = (id) =>
+  CHARACTERS.find((c) => c.id === id) ?? CHARACTERS.find((c) => c.id === DEFAULT_CHARACTER);
 export const playerTextureKey = (id) => `player-${id}`;
 /** Animation key for a character's movement state ('idle' | 'run' | 'jump' | 'fall'). */
 export const playerAnimKey = (id, state) => `${id}-${state}`;

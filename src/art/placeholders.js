@@ -22,35 +22,73 @@ import {
 import { drawPixelText, measurePixelText } from './pixelFont.js';
 
 // --- Player ---------------------------------------------------------------
+// Every character is Naylor in a different outfit. A look = head rows (0–6)
+// + torso rows (7–10); the arms-out and arms-up poses are derived from them,
+// and legs are shared. Letters are coloured by the character's palette.
 
-// Upper body rows (11 rows), shared by every frame.
-const BODY = [
-  '................',
-  '......RRRR......',
-  '.....RRRRRRR....',
-  '.....SSSSSS.....',
-  '.....SKSSKS.....',
-  '.....SSSSSS.....',
-  '......SSSS......',
-  '.....BBBBBB.....',
-  '....SBBBBBBS....',
-  '....SBBBBBBS....',
-  '.....BBBBBB.....',
-];
-const BODY_ARMS_OUT = [...BODY.slice(0, 8), '...SBBBBBBBBS...', '....BBBBBBBB....', BODY[10]];
-const BODY_ARMS_UP = [
-  BODY[0],
-  BODY[1],
-  '..S..RRRRRRR.S..',
-  '..S..SSSSSS..S..',
-  '..S..SKSSKS..S..',
-  '...S.SSSSSS.S...',
-  '...S..SSSS..S...',
-  '....SBBBBBBS....',
-  '.....BBBBBB.....',
-  '.....BBBBBB.....',
-  '.....BBBBBB.....',
-];
+const PLAYER_LOOKS = {
+  // Green school blazer, white shirt, green tie with a gold print, crest badge.
+  senior: {
+    head: [
+      '................',
+      '......HHHH......',
+      '.....HHHHHH.....',
+      '.....HSSSSS.....',
+      '.....SKSSKS.....',
+      '.....SSSSSS.....',
+      '......SSSS......',
+    ],
+    torso: ['.....BCTTCB.....', '....SBBTTBPS....', '....SBBYTBBS....', '.....BBTBBB.....'],
+  },
+  // Modern navy admiral: white-topped peaked cap with gold badge, navy jacket,
+  // white shirt and black tie, gold buttons and sleeve rings.
+  'sea-lord': {
+    head: [
+      '......CCCC......',
+      '.....CCCCCC.....', // white cap top
+      '.....KKGGKK.....', // black band, gold badge
+      '.....HSSSGGG....', // forehead + gold-braided peak jutting forward
+      '.....SKSSKS.....',
+      '.....SSSSSS.....',
+      '......SSSS......',
+    ],
+    torso: ['.....BCKKCB.....', '....BBBKKBBB....', '....GBGBBGBG....', '....SBBBBBBS....'],
+  },
+  // Blue polo with a lighter collar and placket.
+  casual: {
+    head: [
+      '................',
+      '......HHHH......',
+      '.....HHHHHH.....',
+      '.....HSSSSS.....',
+      '.....SKSSKS.....',
+      '.....SSSSSS.....',
+      '......SSSS......',
+    ],
+    torso: ['.....LLBBLL.....', '....SBBLBBBS....', '....SBBBBBBS....', '.....BBBBBB.....'],
+  },
+};
+
+const setAt = (row, col, ch) => row.slice(0, col) + ch + row.slice(col + 1);
+const ARM = 'B'; // sleeves use the jacket/top colour
+
+/** Upper body (11 rows) for a look, in one of three arm poses. */
+function playerBody(look, pose = 'down') {
+  const head = [...look.head];
+  const torso = [...look.torso];
+  if (pose === 'out') {
+    // Arms flung out: sleeves reach to cols 3 and 12, hands beyond.
+    torso[1] = setAt(setAt(setAt(setAt(torso[1], 3, 'S'), 4, ARM), 11, ARM), 12, 'S');
+    torso[2] = setAt(setAt(torso[2], 4, ARM), 11, ARM);
+  } else if (pose === 'up') {
+    // Arms raised beside the head.
+    for (const r of [2, 3, 4]) head[r] = setAt(setAt(head[r], 2, 'S'), 13, 'S');
+    for (const r of [5, 6]) head[r] = setAt(setAt(head[r], 3, ARM), 12, ARM);
+    torso[0] = setAt(setAt(torso[0], 4, ARM), 11, ARM);
+    for (const r of [1, 2, 3]) torso[r] = setAt(setAt(torso[r], 4, '.'), 11, '.');
+  }
+  return [...head, ...torso];
+}
 
 // Leg rows (4 rows) plus one blank row at the bottom.
 const LEGS = {
@@ -66,17 +104,23 @@ function frame(body, legs) {
   return [...body, ...legs, BLANK];
 }
 
-// Frame order must match PLAYER_FRAMES in src/assets.js.
-const PLAYER_ART = [
-  frame(BODY, LEGS.stand), // 0 idle
-  [BLANK, ...frame(BODY, LEGS.stand).slice(0, 11), ...LEGS.stand.slice(1), BLANK], // 1 idle (bob down 1px)
-  frame(BODY, LEGS.stride), // 2 run
-  [BLANK, ...BODY.slice(0, 10), ...LEGS.pass, BLANK], // 3 run (passing, bob)
-  frame(BODY_ARMS_OUT, LEGS.stride), // 4 run
-  [BLANK, ...BODY.slice(0, 10), ...LEGS.pass, BLANK], // 5 run (passing, bob)
-  frame(BODY_ARMS_UP, LEGS.tuck), // 6 jump
-  frame(BODY_ARMS_OUT, LEGS.dangle), // 7 fall
-];
+/** All 8 frames for a look. Order must match PLAYER_FRAMES in src/assets.js. */
+function playerArt(look) {
+  const body = playerBody(look);
+  const out = playerBody(look, 'out');
+  const up = playerBody(look, 'up');
+  const bob = (legs) => [BLANK, ...body.slice(0, 10), ...legs, BLANK]; // body drops 1px
+  return [
+    frame(body, LEGS.stand), // 0 idle
+    [BLANK, ...body, ...LEGS.stand.slice(1), BLANK], // 1 idle (bob down 1px)
+    frame(body, LEGS.stride), // 2 run
+    bob(LEGS.pass), // 3 run (passing)
+    frame(out, LEGS.stride), // 4 run
+    bob(LEGS.pass), // 5 run (passing)
+    frame(up, LEGS.tuck), // 6 jump
+    frame(out, LEGS.dangle), // 7 fall
+  ];
+}
 
 function drawRows(ctx, rows, ox, oy, palette) {
   for (let y = 0; y < rows.length; y++) {
@@ -178,8 +222,9 @@ function bricks(ctx, x, y, w, h, base = C.brick, mortar = C.mortar) {
 function makePlayer(scene, character) {
   const { width, height } = PLAYER_FRAME;
   const count = Math.max(...Object.values(PLAYER_FRAMES).flat()) + 1;
+  const art = playerArt(PLAYER_LOOKS[character.look] ?? PLAYER_LOOKS.casual);
   makeSheet(scene, playerTextureKey(character.id), width, height, count, (ctx, i) =>
-    drawRows(ctx, PLAYER_ART[i], 0, 0, character.palette),
+    drawRows(ctx, art[i], 0, 0, character.palette),
   );
 }
 

@@ -1,15 +1,15 @@
 import Phaser from 'phaser';
 import { SCENE } from './keys.js';
 import { GAME_WIDTH } from '../config.js';
-import { CHARACTERS, DEFAULT_CHARACTER, playerTextureKey, playerAnimKey } from '../assets.js';
+import { CHARACTERS, getCharacter, playerTextureKey, playerAnimKey } from '../assets.js';
 import { addPixelText } from '../ui/text.js';
 import { addBackdrop } from '../ui/backdrop.js';
 import Button from '../ui/Button.js';
 import { isTouchDevice } from '../systems/device.js';
 
-const CARD = { w: 72, h: 78, y: 82, spacing: 88, spriteScale: 3 };
+const CARD = { w: 92, h: 78, y: 82, spacing: 100, spriteScale: 3 }; // wide enough for "SEA LORD"
 
-// Pick a lad before the level loads. Looks only; everyone plays the same.
+// Pick Naylor's outfit before the level loads. Looks only; everyone plays the same.
 // The choice is kept in the game registry ('characterId') for replays.
 export default class CharacterSelectScene extends Phaser.Scene {
   constructor() {
@@ -19,13 +19,13 @@ export default class CharacterSelectScene extends Phaser.Scene {
   create() {
     addBackdrop(this);
     const cx = GAME_WIDTH / 2;
-    addPixelText(this, cx, 10, 'CHOOSE YOUR LAD', { scale: 2, tint: 0xffcd75 }).setOrigin(0.5, 0);
-    addPixelText(this, cx, 26, isTouchDevice() ? 'TAP A LAD, THEN GO' : 'LEFT/RIGHT TO CHOOSE - ENTER TO GO', {
+    addPixelText(this, cx, 10, 'CHOOSE YOUR OUTFIT', { scale: 2, tint: 0xffcd75 }).setOrigin(0.5, 0);
+    addPixelText(this, cx, 26, isTouchDevice() ? 'TAP AN OUTFIT, THEN GO' : 'LEFT/RIGHT TO CHOOSE - ENTER TO GO', {
       scale: 1,
     }).setOrigin(0.5, 0);
 
-    const current = this.registry.get('characterId') ?? DEFAULT_CHARACTER;
-    this.index = Math.max(0, CHARACTERS.findIndex((c) => c.id === current));
+    const current = getCharacter(this.registry.get('characterId')).id; // falls back to the default (Casual)
+    this.index = CHARACTERS.findIndex((c) => c.id === current);
 
     this.cards = CHARACTERS.map((c, i) => {
       const x = cx + (i - (CHARACTERS.length - 1) / 2) * CARD.spacing;

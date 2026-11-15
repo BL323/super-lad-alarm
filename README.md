@@ -172,7 +172,7 @@ Maps are 12 rows (192 px) against a 180 px screen, so the loader shifts everythi
 
 ## Game flow
 
-Boot → Menu → Character select → Game (with the UI scene on top) → Complete. On the Complete screen, PLAY AGAIN goes straight back into the level with the same lad and a fresh run; MENU returns to the title (and from there to the selector). If the level registry gives the level a `next`, a NEXT button appears.
+Boot → Menu → Outfit select → Game (with the UI scene on top) → Complete. On the Complete screen, PLAY AGAIN goes straight back into the level with the same lad and a fresh run; MENU returns to the title (and from there to the selector). If the level registry gives the level a `next`, a NEXT button appears.
 
 | Screen | Touch / mouse | Keyboard |
 | --- | --- | --- |
@@ -185,7 +185,15 @@ There is no pause feature (removed at the owner's request). When the page is hid
 
 ## Characters
 
-`CHARACTERS` in `src/assets.js` lists the selectable lads: Naylor plus two placeholders, "LAD 2" and "LAD 3". They differ in looks only; movement and hitbox are identical, so the level tuning holds for everyone. Each entry has an `id`, a `name` (shown on the select screen) and a `palette` for the placeholder sprite (cap/hair, skin, top, trousers, shoes). To rename or recolour a lad, edit that entry; to add one, add an entry. Sprites and the four animations are created for every entry automatically.
+Every character is **Naylor** (red hair, same skin tone) in a different outfit, chosen on the "CHOOSE YOUR OUTFIT" screen:
+
+| Outfit | Look |
+| --- | --- |
+| **SENIOR** | Green school blazer with a crest, white shirt, green tie with a gold print, grey trousers |
+| **SEA LORD** | Modern navy admiral: white-topped peaked cap with gold badge and gold-braided peak, navy jacket with gold buttons and sleeve rings, white shirt, black tie |
+| **CASUAL** (default) | Blue polo with a lighter collar, red chinos, white trainers |
+
+They differ in looks only. Movement and hitbox are identical, so the level tuning holds for every outfit. `CHARACTERS` in `src/assets.js` holds each outfit's `id`, `name`, `look` and colour `palette`; the head and torso pixel shapes for each look are in `PLAYER_LOOKS` in `src/art/placeholders.js`. The arm poses, legs and all eight animation frames are generated from those, so a new outfit needs one entry in each. `DEFAULT_CHARACTER` sets the default (Casual).
 
 ## Swapping placeholder art
 
@@ -234,7 +242,7 @@ The game title stays **Super Lad Alarm**.
 - **Collectibles.** The registry in `src/entities/Collectible.js` holds `pint` (`counts: true`, shown as collected/total) and `espresso` (`timeBonusMs: 5000`, not in the total, with a pop-up "ESPRESSO MARTINI! -5.0S"). To add a type, add an entry and its texture, then place objects with that `type`.
 - **HUD text uses a pixel bitmap font** built at boot from the 3×5 font, drawn at 2× with a baked drop shadow. That's 10 game px tall (20 CSS px on a 640×360 phone), crisp at every integer scale, and legible over both sky and brick. The menu and other screens still use the system font until stage 5 or 7.
 - **Timed runs instead of score (owner's change, replacing the brief's points and best score).** The HUD shows the pint counter at top left and a running clock (`m:ss.t`) at top right. The clock runs from the start of the level to the finish and keeps going through deaths and respawns. Final time = clock + 2 s × missed pints − 5 s if the martini was found, never below zero. The penalty is `TIMING.missedPintPenaltyMs` in `config.js`, and the martini bonus is `timeBonusMs` on its registry entry. The maths is in `finalTime()` in `src/systems/GameState.js`.
-- **Character select (added at the owner's request).** Naylor plus two placeholder lads, looks only. The choice is kept for the session (Phaser registry) so PLAY AGAIN keeps the same lad. Nothing is saved between sessions.
+- **Outfit select (added at the owner's request).** Three Naylor outfits (Senior, Sea Lord, Casual), looks only, with Casual as the default. The choice is kept for the session (Phaser registry) so PLAY AGAIN keeps the same lad. Nothing is saved between sessions.
 - **One text style.** All screens and the HUD now use the pixel bitmap font (`addPixelText`). The system font remains only for the `?debug` readout.
 - **Completion.** Touching the finish (a full-height trigger) stops the clock, flashes the screen, lets the lad coast to a stop and shows the Complete screen 1.2 s later. The screen shows the time, the missed-pint penalty, the martini bonus and the final time. `GameScene.finishLocked` holds the finish back until the Train Conductor is beaten (the door shows a padlock while locked).
 - **Portrait freeze without a pause feature.** The rotate overlay sleeps Phaser's game loop rather than pausing scenes, because there is no pause feature. On waking it resets the frame delta first, otherwise the first frame back would add all the portrait time to the clock.

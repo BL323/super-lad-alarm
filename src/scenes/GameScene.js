@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { SCENE } from './keys.js';
 import { COLORS, CAMERA, DEBUG, GAME_HEIGHT, PARALLAX, SECRET_REVEAL_ALPHA, FINISH_DELAY_MS, SPEECH } from '../config.js';
-import { TEX, DEFAULT_CHARACTER, FINISH_FRAME } from '../assets.js';
+import { TEX, FINISH_FRAME, getCharacter } from '../assets.js';
 import { addText } from '../ui/text.js';
 import VirtualInput from '../systems/Input.js';
 import { createGameState, addPickup, finalTime } from '../systems/GameState.js';
@@ -22,7 +22,7 @@ export default class GameScene extends Phaser.Scene {
 
   init(data) {
     this.levelDef = getLevel(data?.levelId);
-    this.characterId = data?.characterId ?? this.registry.get('characterId') ?? DEFAULT_CHARACTER;
+    this.characterId = getCharacter(data?.characterId ?? this.registry.get('characterId')).id;
   }
 
   create() {

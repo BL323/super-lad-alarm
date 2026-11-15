@@ -14,7 +14,7 @@
 - Browser testing: the preview pane throttles requestAnimationFrame, so for gameplay tests call `__game.loop.sleep()` and step frames manually with `__game.step(t, 1000/60)`. Tweens don't advance under manual stepping; check those with the loop running. `scene.restart()` keeps `scene.events` listeners, so reload the page between scripted runs.
 - HUD and other crisp text: `addPixelText()` (bitmap font; upper case, digits and `+-./:!'` only). `Phaser.GameObjects.RetroFont.Parse` returns the full cache entry, so pass it straight to `cache.bitmapFont.add`.
 - Collected items are destroyed when their pop tween finishes, so under manual frame stepping check `item.collected`, not group size.
-- Characters are looks-only (`CHARACTERS` in `src/assets.js`); never give them different movement without updating the level validator.
+- Characters are Naylor's outfits, looks only (`CHARACTERS` in `src/assets.js` + `PLAYER_LOOKS` in `src/art/placeholders.js`); default is `casual`. Never give them different movement without updating the level validator.
 - Scene flow: Menu → CharacterSelect → Game(+UI) → Complete. Selected lad lives in `registry.get('characterId')`.
 - Listeners on `scene.events` / `game.events` / `scale` must be removed on SHUTDOWN (emitters outlive restarts).
 - Runs are timed, not scored: no points, no saved best, no pause (owner's decision, overrides the brief). Final time = clock + 2 s per missed pint − bonus `timeBonusMs`; see `finalTime()` in `src/systems/GameState.js`. Don't add localStorage.
