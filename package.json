@@ -9,8 +9,10 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "build": "npm run validate:levels && vite build",
+    "preview": "vite preview",
+    "build:level": "node scripts/build-level-01.mjs",
+    "validate:levels": "node scripts/validate-levels.mjs"
   },
   "dependencies": {
     "phaser": "^3.90.0"

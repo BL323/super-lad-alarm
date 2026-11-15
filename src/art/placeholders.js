@@ -1,15 +1,20 @@
-// Placeholder art, generated in code at boot. Each texture is created under a
+// Placeholder art for the train-crawl theme, generated in code at boot. Each texture is created under a
 // fixed key from src/assets.js. If real artwork has already been loaded under
 // that key (e.g. in BootScene.preload), the placeholder is skipped.
 
 import {
   TEX,
+  PUBS,
+  pubTextureKey,
+  signTextureKey,
   PLAYER_FRAME,
   PLAYER_FRAMES,
-  COIN_FRAME,
+  PINT_FRAME,
+  ESPRESSO_FRAME,
   CHECKPOINT_FRAME,
   TILESET,
 } from '../assets.js';
+import { drawPixelText, measurePixelText } from './pixelFont.js';
 
 const PALETTE = {
   R: '#e43b44', // cap
@@ -91,6 +96,43 @@ function drawRows(ctx, rows, ox, oy) {
 
 // --- Helpers ---------------------------------------------------------------
 
+const C = {
+  ink: '#1a1c2c',
+  white: '#fff1e8',
+  cream: '#f4e4c1',
+  creamDark: '#d8c8a0',
+  grey: '#c2c3c7',
+  midGrey: '#83769c',
+  darkGrey: '#5f574f',
+  concrete: '#9e9ea6',
+  concreteDark: '#7a7a82',
+  yellow: '#ffec27',
+  gold: '#ffcd75',
+  orange: '#ffa300',
+  brick: '#ab5236',
+  mortar: '#743626',
+  wood: '#8f563b',
+  woodDark: '#5d3a1a',
+  green: '#2f6b3a', // carriage livery
+  greenDark: '#1e4a27',
+  grass: '#3fa34d',
+  grassDark: '#2b7a38',
+  glassBlue: '#1d2b53',
+  glassHi: '#5b6ee1',
+  water: '#29adff',
+  waterDark: '#1e6fbf',
+  waterLight: '#a0e4ff',
+  red: '#ff004d',
+  redDim: '#4a1020',
+  greenLit: '#00e436',
+  greenDim: '#16341d',
+  skin: '#f4c49a',
+  stout: '#1a1c2c',
+  ruby: '#5d275d',
+  coffee: '#4a2a1a',
+  bean: '#2a1508',
+};
+
 function makeSheet(scene, key, frameW, frameH, count, draw) {
   const tex = scene.textures.createCanvas(key, frameW * count, frameH);
   const ctx = tex.getContext();
@@ -106,9 +148,32 @@ function makeSheet(scene, key, frameW, frameH, count, draw) {
   return tex;
 }
 
+function makeImage(scene, key, w, h, draw) {
+  const tex = scene.textures.createCanvas(key, w, h);
+  const ctx = tex.getContext();
+  ctx.imageSmoothingEnabled = false;
+  draw(ctx);
+  tex.refresh();
+  return tex;
+}
+
 function rect(ctx, color, x, y, w, h) {
   ctx.fillStyle = color;
   ctx.fillRect(x, y, w, h);
+}
+
+function px(ctx, color, x, y) {
+  rect(ctx, color, x, y, 1, 1);
+}
+
+function bricks(ctx, x, y, w, h, base = C.brick, mortar = C.mortar) {
+  rect(ctx, base, x, y, w, h);
+  for (let row = 0; row * 4 < h; row++) {
+    const ry = y + row * 4 + 3;
+    if (ry < y + h) rect(ctx, mortar, x, ry, w, 1);
+    const off = row % 2 ? 4 : 0;
+    for (let bx = x + off; bx < x + w; bx += 8) rect(ctx, mortar, bx, y + row * 4, 1, Math.min(3, y + h - (y + row * 4)));
+  }
 }
 
 // --- Individual textures -----------------------------------------------------
@@ -119,115 +184,363 @@ function makePlayer(scene) {
   makeSheet(scene, TEX.PLAYER, width, height, count, (ctx, i) => drawRows(ctx, PLAYER_ART[i], 0, 0));
 }
 
-function makeCoin(scene) {
-  const { width, height, count } = COIN_FRAME;
-  const halfWidths = [5, 3, 1, 3]; // spin: full, narrow, edge-on, narrow
-  makeSheet(scene, TEX.COIN, width, height, count, (ctx, i) => {
-    const hw = halfWidths[i];
-    const cx = 8;
-    const r = 5;
-    for (let y = -r; y <= r; y++) {
-      const rowHalf = Math.round(Math.sqrt(r * r - y * y) * (hw / r));
-      const w = Math.max(1, rowHalf * 2);
-      rect(ctx, '#ab5236', cx - w / 2, 8 + y, w, 1); // rim
-      if (w > 2) rect(ctx, '#ffec27', cx - w / 2 + 1, 8 + y, w - 2, 1); // face
-    }
-    if (hw >= 3) rect(ctx, '#fff1e8', cx - 1, 5, 1, 3); // shine
+// Pint of stout: black body, white head.
+function makePint(scene) {
+  const { width, height, count } = PINT_FRAME;
+  makeSheet(scene, TEX.PINT, width, height, count, (ctx, i) => {
+    rect(ctx, C.grey, 4, 3, 1, 11); // glass sides
+    rect(ctx, C.grey, 11, 3, 1, 11);
+    rect(ctx, C.grey, 4, 14, 8, 1); // base
+    rect(ctx, C.stout, 5, 5, 6, 9); // stout
+    rect(ctx, C.ruby, 5, 6, 1, 7); // ruby edge
+    rect(ctx, C.white, 6, 2, 4, 1); // domed head
+    rect(ctx, C.white, 5, 3, 6, 1);
+    rect(ctx, C.cream, 5, 4, 6, 1);
+    if (i > 0) px(ctx, C.white, 9, 5 + i * 2); // travelling glint
   });
 }
 
-function makeSpikes(scene) {
-  const tex = scene.textures.createCanvas(TEX.SPIKES, 16, 16);
-  const ctx = tex.getContext();
-  // Four 4px-wide spikes, 8px tall, sitting on the bottom of the tile.
-  for (let s = 0; s < 4; s++) {
-    const x0 = s * 4;
-    for (let y = 0; y < 8; y++) {
-      const half = Math.ceil(((y + 1) / 8) * 2);
-      rect(ctx, '#c2c3c7', x0 + 2 - half, 8 + y, half * 2, 1);
+function makeEspresso(scene) {
+  const { width, height, count } = ESPRESSO_FRAME;
+  makeSheet(scene, TEX.ESPRESSO, width, height, count, (ctx, i) => {
+    // V-shaped martini bowl
+    const bowl = [
+      [3, 12], // row 3 (rim)
+      [3, 12],
+      [4, 11],
+      [5, 10],
+      [6, 9],
+      [7, 8],
+    ];
+    bowl.forEach(([x0, x1], r) => {
+      const y = 3 + r;
+      px(ctx, C.grey, x0, y);
+      px(ctx, C.grey, x1, y);
+      if (x1 - x0 > 1) rect(ctx, r < 2 ? C.cream : C.coffee, x0 + 1, y, x1 - x0 - 1, 1);
+    });
+    [5, 7, 9].forEach((x) => rect(ctx, C.bean, x, 3, 2, 1)); // coffee beans on the crema
+    rect(ctx, C.grey, 7, 9, 2, 4); // stem
+    rect(ctx, C.grey, 4, 13, 8, 1); // foot
+    if (i === 1) {
+      px(ctx, C.white, 13, 1);
+      px(ctx, C.white, 12, 2);
+      px(ctx, C.white, 14, 2);
+      px(ctx, C.white, 13, 3);
     }
-    rect(ctx, '#fff1e8', x0 + 1, 10, 1, 4); // highlight
-  }
-  rect(ctx, '#5f574f', 0, 15, 16, 1);
-  tex.refresh();
+  });
 }
 
+// Broken glass: shards of bottle green, brown and clear glass.
+function makeGlass(scene) {
+  makeImage(scene, TEX.GLASS, 16, 16, (ctx) => {
+    const shards = [
+      { x: 1, w: 3, h: 6, c: '#3e8948' },
+      { x: 4, w: 2, h: 3, c: '#c7e8f3' },
+      { x: 6, w: 3, h: 7, c: '#c7e8f3' },
+      { x: 9, w: 2, h: 4, c: '#3e8948' },
+      { x: 11, w: 3, h: 6, c: '#8f4a1c' },
+      { x: 14, w: 2, h: 3, c: '#c7e8f3' },
+    ];
+    for (const s of shards) {
+      for (let r = 0; r < s.h; r++) {
+        const w = Math.max(1, Math.ceil((s.w * (r + 1)) / s.h));
+        rect(ctx, s.c, s.x + Math.floor((s.w - w) / 2), 15 - s.h + r, w, 1);
+      }
+      px(ctx, C.white, s.x + Math.floor(s.w / 2), 16 - s.h);
+    }
+    rect(ctx, C.darkGrey, 0, 15, 16, 1);
+  });
+}
+
+// Railway signal: red (inactive) → green (active).
 function makeCheckpoint(scene) {
   const { width, height } = CHECKPOINT_FRAME;
   makeSheet(scene, TEX.CHECKPOINT, width, height, 2, (ctx, i) => {
-    rect(ctx, '#5f574f', 2, 30, 7, 2); // base
-    rect(ctx, '#c2c3c7', 4, 2, 2, 28); // pole
-    rect(ctx, '#fff1e8', 4, 1, 2, 1); // top
-    if (i === CHECKPOINT_FRAME.inactive) {
-      // Lowered, grey flag.
-      rect(ctx, '#83769c', 6, 18, 7, 5);
-      rect(ctx, '#5f574f', 6, 22, 7, 1);
+    const active = i === CHECKPOINT_FRAME.active;
+    rect(ctx, C.darkGrey, 3, 30, 10, 2); // base
+    rect(ctx, C.darkGrey, 7, 13, 2, 17); // post
+    rect(ctx, C.ink, 4, 1, 8, 12); // head
+    rect(ctx, C.white, 4, 1, 8, 1); // backboard trim
+    const lamp = (y, color) => {
+      rect(ctx, color, 6, y, 4, 3);
+      rect(ctx, color, 7, y - 1, 2, 5);
+    };
+    lamp(4, active ? C.redDim : C.red);
+    lamp(9, active ? C.greenLit : C.greenDim);
+    if (active) {
+      px(ctx, C.white, 7, 9);
     } else {
-      // Raised, green flag.
-      rect(ctx, '#00e436', 6, 3, 9, 6);
-      rect(ctx, '#008751', 6, 8, 9, 1);
-      rect(ctx, '#fff1e8', 9, 5, 3, 2);
+      px(ctx, C.white, 7, 4);
     }
   });
 }
 
+// Finish: a pub hanging sign with a pint on it.
 function makeFinish(scene) {
-  const tex = scene.textures.createCanvas(TEX.FINISH, 16, 48);
-  const ctx = tex.getContext();
-  rect(ctx, '#5f574f', 1, 46, 8, 2); // base
-  rect(ctx, '#c2c3c7', 4, 3, 2, 43); // pole
-  rect(ctx, '#ffec27', 3, 0, 4, 3); // knob
-  // Chequered flag, 10×8.
-  for (let y = 0; y < 4; y++) {
-    for (let x = 0; x < 5; x++) {
-      rect(ctx, (x + y) % 2 ? '#1a1c2c' : '#fff1e8', 6 + x * 2, 4 + y * 2, 2, 2);
-    }
-  }
-  tex.refresh();
+  makeImage(scene, TEX.FINISH, 16, 48, (ctx) => {
+    rect(ctx, C.darkGrey, 0, 46, 7, 2); // base
+    rect(ctx, C.woodDark, 2, 4, 2, 42); // post
+    rect(ctx, C.woodDark, 2, 4, 13, 2); // arm
+    px(ctx, C.grey, 6, 6); // chains
+    px(ctx, C.grey, 13, 6);
+    px(ctx, C.grey, 6, 7);
+    px(ctx, C.grey, 13, 7);
+    rect(ctx, C.orange, 4, 8, 12, 15); // board frame
+    rect(ctx, '#7e2553', 5, 9, 10, 13); // board
+    rect(ctx, C.white, 8, 11, 4, 2); // pint icon
+    rect(ctx, C.stout, 8, 13, 4, 6);
+    rect(ctx, C.grey, 7, 12, 1, 7);
+    rect(ctx, C.grey, 12, 12, 1, 7);
+  });
 }
 
 function makeTiles(scene) {
-  const { tileWidth: w, tileHeight: h, tiles, count } = TILESET;
+  const { tileWidth: w, tileHeight: h, tiles: t, count } = TILESET;
   makeSheet(scene, TEX.TILES, w, h, count, (ctx, i) => {
-    if (i === tiles.groundTop || i === tiles.ground) {
-      rect(ctx, '#ab5236', 0, 0, w, h);
-      // Dirt speckles.
-      [[3, 6], [10, 4], [6, 11], [13, 12], [1, 13]].forEach(([x, y]) => rect(ctx, '#7e2553', x, y, 2, 1));
-      if (i === tiles.groundTop) {
-        rect(ctx, '#00e436', 0, 0, w, 4);
-        rect(ctx, '#008751', 0, 4, w, 1);
-        [1, 5, 9, 13].forEach((x) => rect(ctx, '#008751', x, 5, 1, 1));
-      }
-    } else if (i === tiles.platform) {
-      rect(ctx, '#ffa300', 0, 0, w, 6);
-      rect(ctx, '#ab5236', 0, 5, w, 1);
-      rect(ctx, '#ffccaa', 0, 0, w, 1);
-      [3, 11].forEach((x) => rect(ctx, '#ab5236', x, 1, 1, 4));
-    } else if (i === tiles.brick) {
-      rect(ctx, '#5f574f', 0, 0, w, h);
-      rect(ctx, '#83769c', 0, 0, w, 1);
-      for (let y = 0; y < 4; y++) {
-        rect(ctx, '#1a1c2c', 0, y * 4 + 3, w, 1);
-        const off = y % 2 ? 4 : 0;
-        rect(ctx, '#1a1c2c', off, y * 4, 1, 3);
-        rect(ctx, '#1a1c2c', off + 8, y * 4, 1, 3);
-      }
+    switch (i) {
+      case t.platformTop:
+        bricks(ctx, 0, 6, w, 10);
+        rect(ctx, C.concrete, 0, 0, w, 6); // coping
+        rect(ctx, C.grey, 0, 0, w, 1);
+        rect(ctx, C.yellow, 0, 2, w, 1); // safety line
+        rect(ctx, C.concreteDark, 0, 5, w, 1);
+        rect(ctx, C.concreteDark, 0, 0, 1, 5);
+        break;
+      case t.platformBody:
+        bricks(ctx, 0, 0, w, h);
+        break;
+      case t.roofLeft:
+      case t.roofMid:
+      case t.roofRight:
+        rect(ctx, '#6b6b73', 0, 0, w, 5); // roof
+        rect(ctx, '#9a9aa2', 0, 0, w, 1);
+        rect(ctx, C.ink, 0, 5, w, 1); // gutter
+        rect(ctx, C.green, 0, 6, w, 10);
+        rect(ctx, C.cream, 0, 13, w, 1); // waist stripe
+        if (i === t.roofLeft) {
+          ctx.clearRect(0, 0, 2, 1);
+          ctx.clearRect(0, 1, 1, 1);
+          rect(ctx, C.greenDark, 0, 6, 1, 10);
+        }
+        if (i === t.roofRight) {
+          ctx.clearRect(w - 2, 0, 2, 1);
+          ctx.clearRect(w - 1, 1, 1, 1);
+          rect(ctx, C.greenDark, w - 1, 6, 1, 10);
+        }
+        break;
+      case t.carriageWindow:
+        rect(ctx, C.green, 0, 0, w, h);
+        rect(ctx, C.cream, 1, 1, 14, 11);
+        rect(ctx, C.glassBlue, 2, 2, 12, 8);
+        rect(ctx, C.glassHi, 3, 3, 3, 1);
+        rect(ctx, C.glassHi, 3, 4, 1, 2);
+        rect(ctx, C.greenDark, 0, 14, w, 1);
+        break;
+      case t.carriageDoor:
+        rect(ctx, C.green, 0, 0, w, h);
+        rect(ctx, C.greenDark, 3, 0, 1, h);
+        rect(ctx, C.greenDark, 12, 0, 1, h);
+        rect(ctx, C.cream, 5, 1, 6, 7);
+        rect(ctx, C.glassBlue, 6, 2, 4, 5);
+        px(ctx, C.glassHi, 6, 2);
+        rect(ctx, C.orange, 10, 10, 1, 2); // handle
+        break;
+      case t.carriageLower:
+        rect(ctx, C.green, 0, 0, w, h);
+        rect(ctx, C.greenDark, 0, 2, w, 1);
+        rect(ctx, C.greenDark, 0, 12, w, 1);
+        break;
+      case t.bogie:
+        rect(ctx, C.ink, 0, 0, w, 4); // solebar
+        rect(ctx, C.darkGrey, 2, 5, 12, 2); // bogie frame
+        for (let y = -4; y <= 4; y++) {
+          const hw = Math.round(Math.sqrt(16 - y * y + 4));
+          rect(ctx, C.darkGrey, 8 - hw, 11 + y, hw * 2, 1);
+        }
+        rect(ctx, C.grey, 7, 10, 2, 2); // hub
+        break;
+      case t.underframe:
+        rect(ctx, C.ink, 0, 0, w, 4);
+        rect(ctx, '#2a2c3c', 3, 4, 10, 4);
+        break;
+      case t.crate:
+        rect(ctx, C.woodDark, 0, 0, w, h);
+        rect(ctx, C.wood, 1, 1, 14, 14);
+        rect(ctx, C.woodDark, 1, 5, 14, 1);
+        rect(ctx, C.woodDark, 1, 10, 14, 1);
+        for (let d = 1; d < 15; d++) {
+          px(ctx, C.orange, d, d);
+          px(ctx, C.orange, 15 - d, d);
+        }
+        break;
+      case t.grassTop:
+      case t.earth:
+        rect(ctx, C.brick, 0, 0, w, h);
+        [[3, 6], [10, 4], [6, 11], [13, 12], [1, 13]].forEach(([x, y]) => rect(ctx, '#7e2553', x, y, 2, 1));
+        if (i === t.grassTop) {
+          rect(ctx, C.grass, 0, 0, w, 4);
+          rect(ctx, C.grassDark, 0, 4, w, 1);
+          [1, 5, 9, 13].forEach((x) => px(ctx, C.grassDark, x, 5));
+        }
+        break;
+      case t.canopy:
+        rect(ctx, '#4a6b4f', 0, 0, w, h);
+        for (let x = 1; x < w; x += 4) rect(ctx, '#3a5a3f', x, 0, 1, h);
+        rect(ctx, '#6a8b6f', 0, 0, w, 1);
+        break;
+      case t.canopyValance:
+        rect(ctx, C.cream, 0, 0, w, 9);
+        for (let x = 2; x < w; x += 4) rect(ctx, C.creamDark, x, 0, 1, 9);
+        for (let tooth = 0; tooth < 4; tooth++) {
+          for (let r = 0; r < 4; r++) rect(ctx, C.cream, tooth * 4 + r / 2, 9 + r, 4 - r, 1);
+        }
+        break;
+      case t.canopyPost:
+        rect(ctx, C.greenDark, 7, 0, 2, h);
+        rect(ctx, C.greenDark, 5, 0, 6, 2);
+        rect(ctx, C.greenDark, 6, 2, 4, 1);
+        break;
+      case t.water:
+        rect(ctx, C.water, 0, 5, w, 11);
+        rect(ctx, C.waterLight, 1, 4, 5, 1);
+        rect(ctx, C.waterLight, 9, 5, 4, 1);
+        rect(ctx, C.waterDark, 3, 10, 6, 1);
+        break;
+      case t.waterDeep:
+        rect(ctx, C.waterDark, 0, 0, w, h);
+        rect(ctx, C.water, 2, 4, 5, 1);
+        rect(ctx, C.water, 9, 11, 5, 1);
+        break;
     }
   });
+}
+
+// Rolling Dorset hills, 320 px wide so it tiles seamlessly.
+function makeHills(scene) {
+  const W = 320;
+  const H = 64;
+  makeImage(scene, TEX.HILLS, W, H, (ctx) => {
+    const tau = Math.PI * 2;
+    for (let x = 0; x < W; x++) {
+      const far = Math.round(26 + 7 * Math.sin((tau * 2 * x) / W) + 4 * Math.sin((tau * 5 * x) / W + 1));
+      const near = Math.round(42 + 6 * Math.sin((tau * 3 * x) / W + 2) + 3 * Math.sin((tau * 7 * x) / W));
+      rect(ctx, '#8fcf9a', x, far, 1, H - far);
+      rect(ctx, '#5da868', x, near, 1, H - near);
+    }
+    // Hedgerows
+    for (let x = 6; x < W; x += 23) rect(ctx, '#3f7f48', x, 46 + ((x * 7) % 9), 6, 2);
+  });
+}
+
+function makeEasel(scene) {
+  makeImage(scene, TEX.EASEL, 16, 20, (ctx) => {
+    for (let y = 0; y < 20; y++) {
+      px(ctx, C.wood, 7 - Math.floor(y / 4), y); // legs
+      px(ctx, C.wood, 8 + Math.floor(y / 4), y);
+    }
+    rect(ctx, C.white, 2, 3, 12, 9); // canvas
+    rect(ctx, C.wood, 2, 12, 12, 1);
+    rect(ctx, C.red, 4, 5, 3, 3); // a masterpiece
+    rect(ctx, C.water, 8, 6, 4, 2);
+    rect(ctx, C.yellow, 6, 9, 5, 1);
+  });
+}
+
+// Traditional pub front, 96×80, with its name on the fascia.
+function makePub(scene, id, def) {
+  const W = 96;
+  const H = 80;
+  makeImage(scene, pubTextureKey(id), W, H, (ctx) => {
+    // Chimney and roof
+    if (def.chimney) bricks(ctx, 72, 0, 8, 14);
+    else bricks(ctx, 70, 4, 8, 10);
+    rect(ctx, C.darkGrey, def.chimney ? 71 : 69, def.chimney ? 0 : 4, 10, 2);
+    for (let r = 0; r < 12; r++) rect(ctx, def.roof, 12 - r, 8 + r, W - 24 + r * 2, 1);
+    rect(ctx, C.ink, 0, 20, W, 1);
+
+    // Walls
+    if (def.wall === 'brick') bricks(ctx, 2, 21, W - 4, H - 21);
+    else {
+      rect(ctx, '#eae6dc', 2, 21, W - 4, H - 21);
+      rect(ctx, '#cfc8b8', 2, H - 6, W - 4, 6); // plinth
+    }
+
+    // Upper windows
+    for (const x of [12, 42, 72]) {
+      rect(ctx, C.white, x - 1, 24, 14, 13);
+      rect(ctx, C.glassBlue, x, 25, 12, 11);
+      rect(ctx, C.white, x + 5, 25, 2, 11);
+      rect(ctx, C.white, x, 30, 12, 1);
+    }
+
+    // Fascia with the pub name
+    rect(ctx, C.greenDark, 4, 40, W - 8, 10);
+    rect(ctx, C.gold, 4, 40, W - 8, 1);
+    rect(ctx, C.gold, 4, 49, W - 8, 1);
+    const tw = measurePixelText(def.name);
+    drawPixelText(ctx, def.name, Math.round((W - tw) / 2), 43, C.gold);
+
+    // Ground floor: two lit windows and a door
+    for (const x of [8, 64]) {
+      rect(ctx, C.woodDark, x - 1, 53, 26, 20);
+      rect(ctx, C.gold, x, 54, 24, 18);
+      rect(ctx, C.woodDark, x + 8, 54, 1, 18);
+      rect(ctx, C.woodDark, x + 16, 54, 1, 18);
+      rect(ctx, C.woodDark, x, 62, 24, 1);
+      if (def.angryLocals) {
+        for (const fx of [x + 2, x + 17]) {
+          rect(ctx, C.skin, fx, 57, 5, 5); // face
+          px(ctx, C.red, fx, 60); // red cheeks
+          px(ctx, C.red, fx + 4, 60);
+          px(ctx, C.ink, fx, 57); // angry brows \ /
+          px(ctx, C.ink, fx + 1, 58);
+          px(ctx, C.ink, fx + 4, 57);
+          px(ctx, C.ink, fx + 3, 58);
+          rect(ctx, C.ink, fx + 1, 61, 3, 1); // scowl
+        }
+      }
+    }
+    rect(ctx, C.woodDark, 41, 54, 14, H - 54); // door
+    rect(ctx, C.gold, 43, 56, 10, 4); // fanlight
+    px(ctx, C.orange, 52, 68); // knob
+  });
+}
+
+// Station nameboard: cream lettering on green, on two posts.
+export function ensureSignTexture(scene, text) {
+  const key = signTextureKey(text);
+  if (scene.textures.exists(key)) return key;
+  const tw = measurePixelText(text);
+  const W = tw + 8;
+  const H = 24;
+  makeImage(scene, key, W, H, (ctx) => {
+    rect(ctx, C.ink, 2, 9, 2, H - 9);
+    rect(ctx, C.ink, W - 4, 9, 2, H - 9);
+    rect(ctx, C.cream, 0, 0, W, 10);
+    rect(ctx, '#005a2b', 1, 1, W - 2, 8);
+    drawPixelText(ctx, text, 4, 3, C.cream);
+  });
+  return key;
 }
 
 const BUILDERS = {
   [TEX.PLAYER]: makePlayer,
-  [TEX.COIN]: makeCoin,
-  [TEX.SPIKES]: makeSpikes,
+  [TEX.PINT]: makePint,
+  [TEX.ESPRESSO]: makeEspresso,
+  [TEX.GLASS]: makeGlass,
   [TEX.CHECKPOINT]: makeCheckpoint,
   [TEX.FINISH]: makeFinish,
   [TEX.TILES]: makeTiles,
+  [TEX.HILLS]: makeHills,
+  [TEX.EASEL]: makeEasel,
 };
 
 /** Generate every placeholder texture that has not already been loaded as real art. */
 export function createPlaceholderTextures(scene) {
   for (const [key, build] of Object.entries(BUILDERS)) {
     if (!scene.textures.exists(key)) build(scene);
+  }
+  for (const [id, def] of Object.entries(PUBS)) {
+    if (!scene.textures.exists(pubTextureKey(id))) makePub(scene, id, def);
   }
 }

@@ -52,6 +52,15 @@ export const PLAYER = {
   body: { width: 10, height: 13, offsetX: 3, offsetY: 2 },
 };
 
+// Parallax backdrop.
+export const PARALLAX = {
+  hillsFactor: 0.3, // hills scroll at 30% of camera speed
+  hillsBottom: 152, // screen y of the bottom of the hills strip (just below the platform top)
+};
+
+// Secret areas: foreground (station canopy) fades to this alpha while the player is inside.
+export const SECRET_REVEAL_ALPHA = 0.35;
+
 // Camera.
 export const CAMERA = {
   lerp: 0.2, // follow smoothing (1 = locked to player)
@@ -91,6 +100,7 @@ export const TEXT_STYLE = {
 
 export const COLORS = {
   background: '#1d2b53',
+  sky: '#8fd3ff',
   text: '#ffffff',
   textDim: '#c2c3c7',
   accent: '#ffec27',
