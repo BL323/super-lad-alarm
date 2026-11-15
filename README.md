@@ -11,7 +11,7 @@ The full spec is in [initial-build-brief.md](initial-build-brief.md).
 | 1. Scaffold | Done |
 | 2. Player and feel | Done (plus touch buttons from stage 6, pulled forward) |
 | 3. Level | Done: the full level, Dorchester to Parkstone |
-| 4. Collectibles and score | Not started |
+| 4. Collectibles and score | Done |
 | 5. Finish and flow | Not started |
 | 6. Mobile | Partly done: touch buttons, multi-touch, safe-area offsets. Portrait overlay still to do |
 | 7. Polish and ship | Not started |
@@ -66,23 +66,26 @@ src/
   art/placeholders.js   code-generated placeholder textures
   art/animations.js     every animation, defined once and referenced by name
   art/pixelFont.js      3×5 pixel font for signs painted into textures
+  art/bitmapFont.js     the same font as a Phaser bitmap font (HUD text)
   level/levels.js       level registry (id, map key, file, theme, next)
   level/LevelLoader.js  tilemap, collisions, bounds, parallax, decor, hazards; parses objects
   level/validateLevel.js difficulty rules, shared by the CLI script and a dev-only boot check
   scenes/               Boot, Menu, Game, UI (HUD overlay), Complete; keys.js holds scene keys
   entities/Player.js    movement, jump feel, animation state machine, die()/respawn()
+  entities/Collectible.js collectible type registry and pickup pop
   systems/GameState.js  plain run state (score, pints, checkpoint)
   systems/Checkpoints.js railway-signal checkpoints
   systems/Input.js      keyboard + touch merged into one virtual input state
   systems/Audio.js      no-op sound wrapper (unlocks audio on first input)
   systems/Scaling.js    integer-scale frame sizing for Phaser FIT mode
   systems/device.js     touch-device detection
+  ui/Hud.js             pint counter, score, bonus toast
   ui/TouchControls.js   on-screen left/right/jump buttons
   ui/safeArea.js        safe-area insets in game pixels
-  ui/text.js            shared text helper
+  ui/text.js            shared text helpers (system font, pixel font)
 ```
 
-`Collectible.js` and `Storage.js` arrive in later stages, following section 4 of the brief.
+`Storage.js` arrives in stage 5, following section 4 of the brief.
 
 ## Testing flags
 
@@ -165,4 +168,7 @@ The game title stays **Super Lad Alarm**.
 - **Checkpoint triggers** are full screen height, so a checkpoint can't be jumped over.
 - **Texture keys follow the theme:** `pint`, `espresso-martini`, `glass`, `checkpoint` (a railway signal), `finish` (a pub sign), `tiles`, `hills`, `easel`, `pub-<id>`, `sign-<text>`.
 - **"The Old Granary".** `docs/story.md` spells it "Grainary"; the pub sign uses "Granary". Change `PUBS` in `src/assets.js` if that's wrong.
-- **Collectibles are placed in the level data** (31 pints, 1 martini) but are spawned and scored in stage 4.
+- **Collectibles.** The registry in `src/entities/Collectible.js` holds `pint` (10 points, counted as collected/total) and `espresso` (50 points, a bonus not in the total, with a pop-up "ESPRESSO MARTINI! +50"). To add a type, add an entry and its texture, then place objects with that `type`.
+- **HUD text uses a pixel bitmap font** built at boot from the 3×5 font, drawn at 2× with a baked drop shadow. That's 10 game px tall (20 CSS px on a 640×360 phone), crisp at every integer scale, and legible over both sky and brick. The menu and other screens still use the system font until stage 5 or 7.
+- **The HUD shows `SCORE n`** at top right and the pint icon with `collected/total` at top left. Both move in from safe-area insets. Picking up a pint bumps both numbers; the martini bumps the score.
+- **Collected items stay collected** across deaths, and score and pints are never reduced.

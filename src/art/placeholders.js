@@ -184,19 +184,83 @@ function makePlayer(scene) {
   makeSheet(scene, TEX.PLAYER, width, height, count, (ctx, i) => drawRows(ctx, PLAYER_ART[i], 0, 0));
 }
 
-// Pint of stout: black body, white head.
+// Pint of stout in a curved tulip pint glass (no branding): a creamy domed
+// head, full width through the upper third, then a gentle taper to a narrower
+// base. Fills the 16 px frame height so it reads tall and slim.
+//
+// Each row: [left col, right col, part]. `soft` rows only draw their outer
+// pixels in the glass-edge colour, which smooths the step of the taper.
+const PINT_ROWS = [
+  [5, 10, 'headTop'], // 0: dome
+  [4, 11, 'head'], // 1
+  [4, 11, 'headShade'], // 2: where head meets stout
+  [4, 11, 'stout'], // 3: rim
+  [4, 11, 'stout'], // 4
+  [4, 11, 'stout'], // 5: widest
+  [4, 11, 'stout'], // 6
+  [4, 11, 'stout'], // 7
+  [4, 11, 'soft'], // 8: taper begins
+  [4, 11, 'soft'], // 9
+  [5, 10, 'stout'], // 10
+  [5, 10, 'stout'], // 11
+  [5, 10, 'stout'], // 12
+  [5, 10, 'stout'], // 13
+  [5, 10, 'ruby'], // 14: light through the bottom of the stout
+  [5, 10, 'base'], // 15: thick glass base
+];
+// Left-side sheen follows the curve inwards as the glass tapers.
+const PINT_SHEEN = { 4: 5, 5: 5, 6: 5, 7: 5, 8: 6, 9: 6, 10: 6, 11: 6, 12: 6 };
+const PINT_COLORS = {
+  headTop: '#f4ecda',
+  head: '#e6d8bc',
+  headShade: '#c8b28c',
+  stout: '#14100e',
+  edge: '#4a4450', // glass edge, keeps the pint visible on dark backgrounds
+  sheen: '#423b4a',
+  rimShine: '#2e2833', // faint reflection on the right of the bulge
+  ruby: '#3a1a12',
+  base: '#9aa0aa',
+  baseHi: '#c2c3c7',
+};
+
 function makePint(scene) {
   const { width, height, count } = PINT_FRAME;
+  const P = PINT_COLORS;
   makeSheet(scene, TEX.PINT, width, height, count, (ctx, i) => {
-    rect(ctx, C.grey, 4, 3, 1, 11); // glass sides
-    rect(ctx, C.grey, 11, 3, 1, 11);
-    rect(ctx, C.grey, 4, 14, 8, 1); // base
-    rect(ctx, C.stout, 5, 5, 6, 9); // stout
-    rect(ctx, C.ruby, 5, 6, 1, 7); // ruby edge
-    rect(ctx, C.white, 6, 2, 4, 1); // domed head
-    rect(ctx, C.white, 5, 3, 6, 1);
-    rect(ctx, C.cream, 5, 4, 6, 1);
-    if (i > 0) px(ctx, C.white, 9, 5 + i * 2); // travelling glint
+    PINT_ROWS.forEach(([x0, x1, part], y) => {
+      const w = x1 - x0 + 1;
+      switch (part) {
+        case 'headTop':
+          rect(ctx, P.headTop, x0, y, w, 1);
+          break;
+        case 'head':
+          rect(ctx, P.head, x0, y, w, 1);
+          rect(ctx, P.headTop, x0 + 2, y, w - 4, 1);
+          break;
+        case 'headShade':
+          rect(ctx, P.headShade, x0, y, w, 1);
+          break;
+        case 'base':
+          rect(ctx, P.base, x0, y, w, 1);
+          rect(ctx, P.baseHi, x0 + 2, y, w - 4, 1);
+          break;
+        case 'soft':
+          rect(ctx, P.stout, x0 + 1, y, w - 2, 1);
+          px(ctx, P.edge, x0, y);
+          px(ctx, P.edge, x1, y);
+          break;
+        default: // stout, ruby
+          rect(ctx, part === 'ruby' ? P.ruby : P.stout, x0, y, w, 1);
+          px(ctx, P.edge, x0, y);
+          px(ctx, P.edge, x1, y);
+      }
+    });
+    for (const [y, x] of Object.entries(PINT_SHEEN)) px(ctx, P.sheen, x, Number(y));
+    for (const y of [5, 6, 7]) px(ctx, P.rimShine, 10, y);
+    if (i > 0) {
+      const y = 3 + i * 2; // glint travelling down the curve: rows 5, 7, 9
+      px(ctx, C.white, PINT_SHEEN[y], y);
+    }
   });
 }
 

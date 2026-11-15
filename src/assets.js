@@ -13,6 +13,14 @@ export const TEX = {
   TILES: 'tiles',
   HILLS: 'hills', // parallax backdrop
   EASEL: 'easel',
+  FONT: 'font-pixel', // bitmap font texture (3×5 glyphs with a drop shadow)
+};
+
+// Bitmap font key for crisp HUD text (built from src/art/pixelFont.js at boot).
+export const FONT = {
+  PIXEL: 'pixel',
+  cellWidth: 4, // 3 px glyph + 1 px shadow
+  cellHeight: 6, // 5 px glyph + 1 px shadow
 };
 
 /** Texture key for a pub front (see PUBS) or a station nameboard. */

@@ -12,3 +12,5 @@
 - Story/theme: `docs/story.md`; the agreed mapping is in the README "Story and theme" section. Title stays "Super Lad Alarm".
 - Level-01 is generated: edit `scripts/build-level-01.mjs`, then `npm run build:level` (it validates too). Don't hand-edit the JSON.
 - Browser testing: the preview pane throttles requestAnimationFrame, so for gameplay tests call `__game.loop.sleep()` and step frames manually with `__game.step(t, 1000/60)`. Tweens don't advance under manual stepping; check those with the loop running. `scene.restart()` keeps `scene.events` listeners, so reload the page between scripted runs.
+- HUD and other crisp text: `addPixelText()` (bitmap font; upper case, digits and `+-./:!'` only). `Phaser.GameObjects.RetroFont.Parse` returns the full cache entry, so pass it straight to `cache.bitmapFont.add`.
+- Collected items are destroyed when their pop tween finishes, so under manual frame stepping check `item.collected`, not group size.

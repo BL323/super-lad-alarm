@@ -44,8 +44,12 @@ const GLYPHS = {
   "'": ['.#.', '.#.', '...', '...', '...'],
   '/': ['..#', '..#', '.#.', '#..', '#..'],
   ':': ['...', '.#.', '...', '.#.', '...'],
+  '+': ['...', '.#.', '###', '.#.', '...'],
   ' ': ['...', '...', '...', '...', '...'],
 };
+
+/** Every character the font can draw. */
+export const PIXEL_FONT_CHARS = Object.keys(GLYPHS).join('');
 
 export const GLYPH_WIDTH = 3;
 export const GLYPH_HEIGHT = 5;

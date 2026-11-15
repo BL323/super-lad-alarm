@@ -67,9 +67,17 @@ export const CAMERA = {
   deadzoneWidth: 48, // px the player can move before the camera follows
 };
 
-// Scoring.
+// Scoring. Per-item points live in the collectible registry (src/entities/Collectible.js).
 export const SCORING = {
   completionBonus: 100,
+};
+
+// HUD (game px). Text uses the pixel bitmap font at a whole-number scale.
+export const HUD = {
+  margin: 4,
+  textScale: 2,
+  bumpScale: 1.3, // counter grows to this × on pickup, then settles
+  bumpMs: 90,
 };
 
 // Input.

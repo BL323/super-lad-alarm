@@ -4,9 +4,11 @@ import { COLORS, CAMERA, DEBUG, GAME_HEIGHT, PARALLAX, SECRET_REVEAL_ALPHA } fro
 import { TEX } from '../assets.js';
 import { addText } from '../ui/text.js';
 import VirtualInput from '../systems/Input.js';
-import { createGameState } from '../systems/GameState.js';
+import { createGameState, addPickup } from '../systems/GameState.js';
+import Audio from '../systems/Audio.js';
 import Checkpoints from '../systems/Checkpoints.js';
 import Player from '../entities/Player.js';
+import Collectible, { collectibleTypes } from '../entities/Collectible.js';
 import { getLevel } from '../level/levels.js';
 import { loadLevel, DEPTH } from '../level/LevelLoader.js';
 
@@ -23,7 +25,6 @@ export default class GameScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(COLORS.sky);
     this.gameState = createGameState(this.levelDef.id);
     this.level = loadLevel(this, this.levelDef);
-    this.gameState.coinsTotal = this.level.collectibles.filter((c) => c.type === 'pint').length;
 
     this.controls = new VirtualInput(this);
     const { spawn } = this.level;
@@ -32,6 +33,7 @@ export default class GameScene extends Phaser.Scene {
     this.physics.add.overlap(this.player, this.level.hazards, () => this.player.die());
 
     this.checkpoints = new Checkpoints(this, this.level.checkpoints, this.player, this.gameState);
+    this.spawnCollectibles();
 
     if (this.level.finish) {
       const f = this.level.finish;
@@ -50,7 +52,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     // HUD, pause and touch buttons run in their own scene on top of this one.
-    this.scene.launch(SCENE.UI, { controls: this.controls });
+    this.scene.launch(SCENE.UI, { controls: this.controls, gameState: this.gameState });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.scene.stop(SCENE.UI));
   }
 
@@ -74,6 +76,27 @@ export default class GameScene extends Phaser.Scene {
           `vx ${b.velocity.x.toFixed(0)} vy ${b.velocity.y.toFixed(0)} cp ${this.gameState.checkpoint?.name ?? '-'}`,
       );
     }
+  }
+
+  spawnCollectibles() {
+    this.collectibles = this.physics.add.staticGroup();
+    for (const c of this.level.collectibles) {
+      const def = collectibleTypes[c.type];
+      if (!def) {
+        if (import.meta.env.DEV) console.error(`Unknown collectible type "${c.type}"`);
+        continue;
+      }
+      this.collectibles.add(new Collectible(this, c.x, c.y, c.type).setDepth(DEPTH.props));
+      if (def.counts) this.gameState.coinsTotal += 1;
+    }
+    this.physics.add.overlap(this.player, this.collectibles, (_p, item) => this.onPickup(item));
+  }
+
+  onPickup(item) {
+    if (this.player.dead || !item.collect()) return;
+    addPickup(this.gameState, item.def);
+    Audio.play(item.def.sound);
+    this.events.emit('pickup', { type: item.type, def: item.def, x: item.x, y: item.y });
   }
 
   /** Fade the foreground (station canopy) while the player is in a secret area. */

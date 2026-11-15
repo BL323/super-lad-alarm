@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { SCENE } from './keys.js';
 import { createPlaceholderTextures } from '../art/placeholders.js';
 import { registerAnimations } from '../art/animations.js';
+import { createPixelBitmapFont } from '../art/bitmapFont.js';
+import { collectibleTypes } from '../entities/Collectible.js';
 import { LEVELS } from '../level/levels.js';
 import { validateLevel, formatReport } from '../level/validateLevel.js';
 
@@ -19,11 +21,12 @@ export default class BootScene extends Phaser.Scene {
   create() {
     createPlaceholderTextures(this);
     registerAnimations(this);
+    createPixelBitmapFont(this);
 
     // Dev-only: re-check every level against the difficulty rules.
     if (import.meta.env.DEV) {
       for (const level of LEVELS) {
-        const report = validateLevel(this.cache.tilemap.get(level.mapKey).data);
+        const report = validateLevel(this.cache.tilemap.get(level.mapKey).data, undefined, Object.keys(collectibleTypes));
         if (report.errors.length) console.error(formatReport(level.id, report));
       }
     }
