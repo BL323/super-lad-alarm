@@ -138,7 +138,9 @@ export default class BossArena {
     this.setWalls(false);
     this.releaseCamera(); // free to hop off at Parkstone
     this.scene.cameras.main.flash(250, 255, 236, 39);
-    this.boss.exit(() => this.boss.setVisible(false));
+    // Knock him off the train, away from the player.
+    const awayDir = this.boss.x >= this.player.x ? 1 : -1;
+    this.boss.exit(awayDir);
     this.scene.events.emit('boss-defeated');
   }
 

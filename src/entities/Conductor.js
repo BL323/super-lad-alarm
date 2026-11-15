@@ -65,8 +65,8 @@ export default class Conductor extends Phaser.Physics.Arcade.Sprite {
     this.hp = BOSS.hits;
     this.body.enable = true;
     this.body.reset(this.start.x, this.start.y - F.height / 2);
-    this.setAlpha(1).clearTint().setFlipX(true).setScale(1);
     this.scene.tweens.killTweensOf(this);
+    this.setAlpha(1).clearTint().setFlipX(true).setScale(1).setAngle(0).setVisible(true);
     this.enter(BossState.WAITING);
   }
 
@@ -229,24 +229,39 @@ export default class Conductor extends Phaser.Physics.Arcade.Sprite {
     Audio.play('ticket');
   }
 
-  /** Slump, then stomp off the platform and fade away. */
-  exit(onDone) {
+  /**
+   * Knocked off the train: he pops up, spinning, and tumbles off the side away
+   * from the player, out of sight in under a second. `awayDir` is -1 or 1.
+   */
+  exit(awayDir, onDone) {
     this.body.enable = false;
+    this.anims.stop();
+    this.setFrame(F.dizzy).clearTint();
+    this.stars.setVisible(false);
+    this.warning.setVisible(false);
+    this.scene.tweens.killTweensOf(this);
+    this.setDepth(this.depth + 20); // tumble in front of the carriages
+
+    const { x, y } = this;
+    const fallY = this.scene.cameras.main.scrollY + this.scene.scale.gameSize.height + this.displayHeight;
+    this.scene.tweens.add({ targets: this, angle: awayDir * 540, duration: BOSS.exitMs });
+    this.scene.tweens.add({ targets: this, x: x + awayDir * BOSS.exitDistance, duration: BOSS.exitMs });
     this.scene.tweens.add({
       targets: this,
-      y: this.y + 4,
-      duration: 500,
-      yoyo: true,
-      onComplete: () => {
-        this.stars.setVisible(false);
+      y: y - 26,
+      duration: BOSS.exitMs * 0.3,
+      ease: 'Quad.Out',
+      onComplete: () =>
         this.scene.tweens.add({
           targets: this,
-          x: this.x + 60,
-          alpha: 0,
-          duration: 700,
-          onComplete: () => onDone?.(),
-        });
-      },
+          y: fallY,
+          duration: BOSS.exitMs * 0.7,
+          ease: 'Quad.In',
+          onComplete: () => {
+            this.setVisible(false);
+            onDone?.();
+          },
+        }),
     });
   }
 

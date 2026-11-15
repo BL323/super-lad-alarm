@@ -100,6 +100,8 @@ export const BOSS = {
   dizzyMs: 1600, // stomp window
   hurtMs: 700,
   stompBounce: -260, // player bounce off his cap
+  exitMs: 850, // final stomp: knocked off the train, spinning, gone in this time
+  exitDistance: 70, // px he travels sideways while tumbling off
   body: { width: 12, height: 26, offsetX: 2, offsetY: 4 },
 };
 
