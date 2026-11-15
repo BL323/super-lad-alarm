@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { PLAYER } from '../config.js';
-import { TEX, ANIM, PLAYER_FRAMES } from '../assets.js';
+import { PLAYER_FRAMES, DEFAULT_CHARACTER, playerTextureKey, playerAnimKey } from '../assets.js';
 import Audio from '../systems/Audio.js';
 
 // Movement states. They only choose the animation; physics never depends on art.
@@ -9,13 +9,6 @@ export const PlayerState = {
   RUN: 'run',
   JUMP: 'jump',
   FALL: 'fall',
-};
-
-const STATE_ANIM = {
-  [PlayerState.IDLE]: ANIM.PLAYER_IDLE,
-  [PlayerState.RUN]: ANIM.PLAYER_RUN,
-  [PlayerState.JUMP]: ANIM.PLAYER_JUMP,
-  [PlayerState.FALL]: ANIM.PLAYER_FALL,
 };
 
 const RUN_ANIM_MIN_SPEED = 5; // px/s; below this on the ground we show idle
@@ -30,9 +23,11 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
    * @param {number} x spawn x (sprite centre)
    * @param {number} y spawn y (sprite centre)
    * @param {import('../systems/Input.js').default} controls virtual input
+   * @param {string} characterId which character's sprites to use (looks only)
    */
-  constructor(scene, x, y, controls) {
-    super(scene, x, y, TEX.PLAYER, PLAYER_FRAMES.idle[0]);
+  constructor(scene, x, y, controls, characterId = DEFAULT_CHARACTER) {
+    super(scene, x, y, playerTextureKey(characterId), PLAYER_FRAMES.idle[0]);
+    this.characterId = characterId;
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
@@ -65,7 +60,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   setMoveState(state) {
     if (state === this.moveState) return this;
     this.moveState = state;
-    this.play(STATE_ANIM[state], true);
+    this.play(playerAnimKey(this.characterId, state), true);
     return this;
   }
 

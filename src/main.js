@@ -5,6 +5,7 @@ import { setupScaling } from './systems/Scaling.js';
 import Audio from './systems/Audio.js';
 import BootScene from './scenes/BootScene.js';
 import MenuScene from './scenes/MenuScene.js';
+import CharacterSelectScene from './scenes/CharacterSelectScene.js';
 import GameScene from './scenes/GameScene.js';
 import UIScene from './scenes/UIScene.js';
 import CompleteScene from './scenes/CompleteScene.js';
@@ -37,7 +38,7 @@ const game = new Phaser.Game({
   input: {
     activePointers: INPUT.maxPointers,
   },
-  scene: [BootScene, MenuScene, GameScene, UIScene, CompleteScene],
+  scene: [BootScene, MenuScene, CharacterSelectScene, GameScene, UIScene, CompleteScene],
 });
 
 scaling.attach(game);

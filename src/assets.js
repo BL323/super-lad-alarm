@@ -4,7 +4,6 @@
 // scripts (level builder, validator) can use it too.
 
 export const TEX = {
-  PLAYER: 'player', // Naylor
   PINT: 'pint',
   ESPRESSO: 'espresso-martini',
   GLASS: 'glass', // broken-glass hazard
@@ -34,6 +33,33 @@ export const PUBS = {
   'old-granary': { name: 'THE OLD GRANARY', wall: 'brick', roof: '#7e2553' },
   avocet: { name: 'THE AVOCET', wall: 'render', roof: '#29366f' },
 };
+
+// Playable characters. Looks only: everyone shares the same movement and
+// hitbox. Palette letters: R cap/hair, S skin, K eyes, B top, D trousers, W shoes.
+// Real art: load a spritesheet under playerTextureKey(id) with the frame
+// layout below and the placeholder for that character is skipped.
+export const CHARACTERS = [
+  {
+    id: 'naylor',
+    name: 'NAYLOR',
+    palette: { R: '#e43b44', S: '#f4c49a', K: '#1a1c2c', B: '#3b5dc9', D: '#29366f', W: '#5d275d' },
+  },
+  {
+    id: 'lad-2',
+    name: 'LAD 2',
+    palette: { R: '#7e4a2a', S: '#f4c49a', K: '#1a1c2c', B: '#008751', D: '#5f574f', W: '#1a1c2c' },
+  },
+  {
+    id: 'lad-3',
+    name: 'LAD 3',
+    palette: { R: '#ffa300', S: '#c88a5a', K: '#1a1c2c', B: '#7e2553', D: '#29366f', W: '#ab5236' },
+  },
+];
+export const DEFAULT_CHARACTER = CHARACTERS[0].id;
+export const getCharacter = (id) => CHARACTERS.find((c) => c.id === id) ?? CHARACTERS[0];
+export const playerTextureKey = (id) => `player-${id}`;
+/** Animation key for a character's movement state ('idle' | 'run' | 'jump' | 'fall'). */
+export const playerAnimKey = (id, state) => `${id}-${state}`;
 
 // Player spritesheet frame layout (frame size and frame indices per animation).
 export const PLAYER_FRAME = { width: 16, height: 16 };
@@ -78,10 +104,6 @@ export const TILESET = {
 
 // Animation keys, referenced by name everywhere else.
 export const ANIM = {
-  PLAYER_IDLE: 'idle',
-  PLAYER_RUN: 'run',
-  PLAYER_JUMP: 'jump',
-  PLAYER_FALL: 'fall',
   PINT_SHINE: 'pint-shine',
   ESPRESSO_SHINE: 'espresso-shine',
 };

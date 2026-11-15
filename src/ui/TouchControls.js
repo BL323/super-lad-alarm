@@ -72,6 +72,10 @@ export default class TouchControls {
     if (kind === 'jump') g.fillTriangle(c, c - r, c - r, c + r * 0.8, c + r, c + r * 0.8);
   }
 
+  setVisible(visible) {
+    Object.values(this.buttons).forEach((g) => g.setVisible(visible));
+  }
+
   update() {
     const t = this.controls.touch;
     for (const key of ['left', 'right', 'jump']) {

@@ -3,16 +3,17 @@ import { TEX, ANIM } from '../assets.js';
 
 // Collectible type registry. Level objects carry a `type` property matching a
 // key here, so a new type needs only an entry (and its art), no loader changes.
-//   points  added to the score on pickup
-//   counts  counts towards the collected/total pint counter
-//   label   shown in the pickup toast for bonus items (optional)
+//   counts       counts towards the collected/total pint counter (each one
+//                missed adds TIMING.missedPintPenaltyMs to the final time)
+//   timeBonusMs  taken off the final time when collected (optional)
+//   label        shown in the pickup toast for bonus items (optional)
 export const collectibleTypes = {
-  pint: { texture: TEX.PINT, anim: ANIM.PINT_SHINE, points: 10, counts: true, sound: 'coin' },
+  pint: { texture: TEX.PINT, anim: ANIM.PINT_SHINE, counts: true, sound: 'coin' },
   espresso: {
     texture: TEX.ESPRESSO,
     anim: ANIM.ESPRESSO_SHINE,
-    points: 50,
     counts: false,
+    timeBonusMs: 5000,
     label: 'ESPRESSO MARTINI!',
     sound: 'coin',
   },

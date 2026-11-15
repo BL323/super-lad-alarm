@@ -1,10 +1,10 @@
 import Phaser from 'phaser';
 import { SCENE } from './keys.js';
-import { COLORS, CAMERA, DEBUG, GAME_HEIGHT, PARALLAX, SECRET_REVEAL_ALPHA } from '../config.js';
-import { TEX } from '../assets.js';
+import { COLORS, CAMERA, DEBUG, GAME_HEIGHT, PARALLAX, SECRET_REVEAL_ALPHA, FINISH_DELAY_MS } from '../config.js';
+import { TEX, DEFAULT_CHARACTER } from '../assets.js';
 import { addText } from '../ui/text.js';
 import VirtualInput from '../systems/Input.js';
-import { createGameState, addPickup } from '../systems/GameState.js';
+import { createGameState, addPickup, finalTime } from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
 import Checkpoints from '../systems/Checkpoints.js';
 import Player from '../entities/Player.js';
@@ -19,6 +19,7 @@ export default class GameScene extends Phaser.Scene {
 
   init(data) {
     this.levelDef = getLevel(data?.levelId);
+    this.characterId = data?.characterId ?? this.registry.get('characterId') ?? DEFAULT_CHARACTER;
   }
 
   create() {
@@ -28,16 +29,22 @@ export default class GameScene extends Phaser.Scene {
 
     this.controls = new VirtualInput(this);
     const { spawn } = this.level;
-    this.player = new Player(this, spawn.x, spawn.y - 8, this.controls).setDepth(DEPTH.player);
+    this.player = new Player(this, spawn.x, spawn.y - 8, this.controls, this.characterId).setDepth(DEPTH.player);
     this.physics.add.collider(this.player, this.level.layers.ground);
     this.physics.add.overlap(this.player, this.level.hazards, () => this.player.die());
 
     this.checkpoints = new Checkpoints(this, this.level.checkpoints, this.player, this.gameState);
     this.spawnCollectibles();
 
+    // Finish: reaching it completes the level unless `finishLocked` is set
+    // (a boss fight will hold it until the boss is beaten).
+    this.finishLocked = false;
     if (this.level.finish) {
       const f = this.level.finish;
       this.finish = this.add.image(f.x, f.y, TEX.FINISH).setOrigin(0.5, 1).setDepth(DEPTH.props);
+      const trigger = this.add.zone(f.x, GAME_HEIGHT / 2, 16, GAME_HEIGHT);
+      this.physics.add.existing(trigger, true);
+      this.physics.add.overlap(this.player, trigger, () => this.completeLevel());
     }
 
     const cam = this.cameras.main;
@@ -51,12 +58,14 @@ export default class GameScene extends Phaser.Scene {
       this.debugText = addText(this, 4, 4, '', { color: '#1a1c2c' }).setScrollFactor(0).setDepth(1000);
     }
 
-    // HUD, pause and touch buttons run in their own scene on top of this one.
+    // HUD and touch buttons run in their own scene on top of this one.
     this.scene.launch(SCENE.UI, { controls: this.controls, gameState: this.gameState });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.scene.stop(SCENE.UI));
   }
 
   update(time, delta) {
+    // Run clock: from level start to the finish, deaths included.
+    if (!this.gameState.completed) this.gameState.elapsedMs += delta;
     this.controls.update();
     this.player.update(time, delta);
 
@@ -88,6 +97,7 @@ export default class GameScene extends Phaser.Scene {
       }
       this.collectibles.add(new Collectible(this, c.x, c.y, c.type).setDepth(DEPTH.props));
       if (def.counts) this.gameState.coinsTotal += 1;
+      else this.gameState.bonusesTotal += 1;
     }
     this.physics.add.overlap(this.player, this.collectibles, (_p, item) => this.onPickup(item));
   }
@@ -97,6 +107,19 @@ export default class GameScene extends Phaser.Scene {
     addPickup(this.gameState, item.def);
     Audio.play(item.def.sound);
     this.events.emit('pickup', { type: item.type, def: item.def, x: item.x, y: item.y });
+  }
+
+  completeLevel() {
+    const s = this.gameState;
+    if (s.completed || this.finishLocked || this.player.dead) return;
+    s.completed = true; // stops the clock
+    this.controls.enabled = false; // the lad coasts to a stop
+    Audio.play('finish');
+    this.cameras.main.flash(200, 255, 241, 232);
+    this.events.emit('level-complete', s);
+
+    const result = { ...s, ...finalTime(s), characterId: this.characterId };
+    this.time.delayedCall(FINISH_DELAY_MS, () => this.scene.start(SCENE.COMPLETE, result));
   }
 
   /** Fade the foreground (station canopy) while the player is in a secret area. */

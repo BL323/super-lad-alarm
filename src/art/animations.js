@@ -1,11 +1,32 @@
-import { TEX, ANIM, PLAYER_FRAMES, PINT_FRAME, ESPRESSO_FRAME } from '../assets.js';
+import {
+  TEX,
+  ANIM,
+  CHARACTERS,
+  playerTextureKey,
+  playerAnimKey,
+  PLAYER_FRAMES,
+  PINT_FRAME,
+  ESPRESSO_FRAME,
+} from '../assets.js';
+
+// Player movement animations, created for every character.
+const PLAYER_ANIMS = {
+  idle: { frameRate: 2, repeat: -1 },
+  run: { frameRate: 12, repeat: -1 },
+  jump: { frameRate: 1, repeat: 0 },
+  fall: { frameRate: 1, repeat: 0 },
+};
 
 // Every animation is defined here and referenced elsewhere by name (src/assets.js ANIM).
 const DEFS = [
-  { key: ANIM.PLAYER_IDLE, texture: TEX.PLAYER, frames: PLAYER_FRAMES.idle, frameRate: 2, repeat: -1 },
-  { key: ANIM.PLAYER_RUN, texture: TEX.PLAYER, frames: PLAYER_FRAMES.run, frameRate: 12, repeat: -1 },
-  { key: ANIM.PLAYER_JUMP, texture: TEX.PLAYER, frames: PLAYER_FRAMES.jump, frameRate: 1, repeat: 0 },
-  { key: ANIM.PLAYER_FALL, texture: TEX.PLAYER, frames: PLAYER_FRAMES.fall, frameRate: 1, repeat: 0 },
+  ...CHARACTERS.flatMap((c) =>
+    Object.entries(PLAYER_ANIMS).map(([state, a]) => ({
+      key: playerAnimKey(c.id, state),
+      texture: playerTextureKey(c.id),
+      frames: PLAYER_FRAMES[state],
+      ...a,
+    })),
+  ),
   { key: ANIM.PINT_SHINE, texture: TEX.PINT, frames: [...Array(PINT_FRAME.count).keys()], frameRate: 6, repeat: -1 },
   {
     key: ANIM.ESPRESSO_SHINE,

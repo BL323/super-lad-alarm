@@ -5,6 +5,8 @@
 import {
   TEX,
   PUBS,
+  CHARACTERS,
+  playerTextureKey,
   pubTextureKey,
   signTextureKey,
   PLAYER_FRAME,
@@ -15,15 +17,6 @@ import {
   TILESET,
 } from '../assets.js';
 import { drawPixelText, measurePixelText } from './pixelFont.js';
-
-const PALETTE = {
-  R: '#e43b44', // cap
-  S: '#f4c49a', // skin
-  K: '#1a1c2c', // eyes / outline
-  B: '#3b5dc9', // shirt
-  D: '#29366f', // trousers
-  W: '#5d275d', // shoes
-};
 
 // --- Player ---------------------------------------------------------------
 
@@ -82,11 +75,11 @@ const PLAYER_ART = [
   frame(BODY_ARMS_OUT, LEGS.dangle), // 7 fall
 ];
 
-function drawRows(ctx, rows, ox, oy) {
+function drawRows(ctx, rows, ox, oy, palette) {
   for (let y = 0; y < rows.length; y++) {
     const row = rows[y];
     for (let x = 0; x < row.length; x++) {
-      const color = PALETTE[row[x]];
+      const color = palette[row[x]];
       if (!color) continue;
       ctx.fillStyle = color;
       ctx.fillRect(ox + x, oy + y, 1, 1);
@@ -178,10 +171,13 @@ function bricks(ctx, x, y, w, h, base = C.brick, mortar = C.mortar) {
 
 // --- Individual textures -----------------------------------------------------
 
-function makePlayer(scene) {
+// One sprite sheet per character: same frames, different palette.
+function makePlayer(scene, character) {
   const { width, height } = PLAYER_FRAME;
   const count = Math.max(...Object.values(PLAYER_FRAMES).flat()) + 1;
-  makeSheet(scene, TEX.PLAYER, width, height, count, (ctx, i) => drawRows(ctx, PLAYER_ART[i], 0, 0));
+  makeSheet(scene, playerTextureKey(character.id), width, height, count, (ctx, i) =>
+    drawRows(ctx, PLAYER_ART[i], 0, 0, character.palette),
+  );
 }
 
 // Pint of stout in a curved tulip pint glass (no branding): a creamy domed
@@ -588,7 +584,6 @@ export function ensureSignTexture(scene, text) {
 }
 
 const BUILDERS = {
-  [TEX.PLAYER]: makePlayer,
   [TEX.PINT]: makePint,
   [TEX.ESPRESSO]: makeEspresso,
   [TEX.GLASS]: makeGlass,
@@ -603,6 +598,9 @@ const BUILDERS = {
 export function createPlaceholderTextures(scene) {
   for (const [key, build] of Object.entries(BUILDERS)) {
     if (!scene.textures.exists(key)) build(scene);
+  }
+  for (const character of CHARACTERS) {
+    if (!scene.textures.exists(playerTextureKey(character.id))) makePlayer(scene, character);
   }
   for (const [id, def] of Object.entries(PUBS)) {
     if (!scene.textures.exists(pubTextureKey(id))) makePub(scene, id, def);

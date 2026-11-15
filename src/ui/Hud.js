@@ -2,10 +2,12 @@ import Phaser from 'phaser';
 import { GAME_WIDTH, HUD } from '../config.js';
 import { TEX } from '../assets.js';
 import { addPixelText } from './text.js';
+import { formatTime, formatSeconds } from '../systems/GameState.js';
 import { safeAreaInGame } from './safeArea.js';
 
-// Pint counter (collected/total) at top left, score at top right. Updates on
-// the GameScene's 'pickup' event and bumps the changed number.
+// Pint counter (collected/total) at top left, run timer at top right. The
+// counter updates on the GameScene's 'pickup' event and bumps; the timer
+// updates every frame and stops at the finish.
 export default class Hud {
   constructor(scene, gameScene, gameState) {
     this.scene = scene;
@@ -13,7 +15,8 @@ export default class Hud {
 
     this.icon = scene.add.image(0, 0, TEX.PINT, 0).setOrigin(0, 0);
     this.coins = addPixelText(scene, 0, 0, '', { scale: HUD.textScale }).setOrigin(0, 0.5);
-    this.score = addPixelText(scene, 0, 0, '', { scale: HUD.textScale }).setOrigin(1, 0.5);
+    this.timer = addPixelText(scene, 0, 0, '', { scale: HUD.textScale }).setOrigin(1, 0.5);
+    this.shownTime = null;
     this.toast = addPixelText(scene, GAME_WIDTH / 2, 40, '', { scale: HUD.textScale, tint: 0xffcd75 })
       .setOrigin(0.5)
       .setAlpha(0);
@@ -23,14 +26,21 @@ export default class Hud {
 
     const onPickup = ({ def }) => {
       this.refresh();
-      this.bump(def.counts ? [this.coins, this.icon] : [this.score]);
-      if (def.counts) this.bump([this.score]);
-      if (def.label) this.showToast(`${def.label} +${def.points}`);
+      if (def.counts) this.bump([this.coins, this.icon]);
+      if (def.timeBonusMs) this.bump([this.timer]);
+      if (def.label) this.showToast(def.timeBonusMs ? `${def.label} -${formatSeconds(def.timeBonusMs)}` : def.label);
+    };
+    const onComplete = () => {
+      this.update();
+      this.timer.setTint(0xffcd75);
+      this.bump([this.timer]);
     };
     gameScene.events.on('pickup', onPickup);
+    gameScene.events.on('level-complete', onComplete);
     scene.scale.on(Phaser.Scale.Events.RESIZE, this.layout, this);
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       gameScene.events.off('pickup', onPickup);
+      gameScene.events.off('level-complete', onComplete);
       scene.scale.off(Phaser.Scale.Events.RESIZE, this.layout, this);
     });
   }
@@ -43,13 +53,22 @@ export default class Hud {
     this.icon.setPosition(left, top);
     const midY = top + 8; // centre of the 16 px icon
     this.coins.setPosition(left + 18, midY);
-    this.score.setPosition(right, midY);
+    this.timer.setPosition(right, midY);
   }
 
   refresh() {
     const s = this.gameState;
     this.coins.setText(`${s.coins}/${s.coinsTotal}`);
-    this.score.setText(`SCORE ${s.score}`);
+    this.update();
+  }
+
+  /** Called every frame; only re-renders when the shown tenth changes. */
+  update() {
+    const text = formatTime(this.gameState.elapsedMs);
+    if (text !== this.shownTime) {
+      this.shownTime = text;
+      this.timer.setText(text);
+    }
   }
 
   bump(targets) {

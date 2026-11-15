@@ -11,8 +11,8 @@ The full spec is in [initial-build-brief.md](initial-build-brief.md).
 | 1. Scaffold | Done |
 | 2. Player and feel | Done (plus touch buttons from stage 6, pulled forward) |
 | 3. Level | Done: the full level, Dorchester to Parkstone |
-| 4. Collectibles and score | Done |
-| 5. Finish and flow | Not started |
+| 4. Collectibles and timing | Done (score replaced by a timer at the owner's request) |
+| 5. Finish and flow | Done (plus a character select screen) |
 | 6. Mobile | Partly done: touch buttons, multi-touch, safe-area offsets. Portrait overlay still to do |
 | 7. Polish and ship | Not started |
 
@@ -70,22 +70,23 @@ src/
   level/levels.js       level registry (id, map key, file, theme, next)
   level/LevelLoader.js  tilemap, collisions, bounds, parallax, decor, hazards; parses objects
   level/validateLevel.js difficulty rules, shared by the CLI script and a dev-only boot check
-  scenes/               Boot, Menu, Game, UI (HUD overlay), Complete; keys.js holds scene keys
+  scenes/               Boot, Menu, CharacterSelect, Game, UI (HUD and touch buttons), Complete; keys.js holds scene keys
   entities/Player.js    movement, jump feel, animation state machine, die()/respawn()
   entities/Collectible.js collectible type registry and pickup pop
-  systems/GameState.js  plain run state (score, pints, checkpoint)
+  systems/GameState.js  plain run state (clock, pints, checkpoint) and final-time maths
   systems/Checkpoints.js railway-signal checkpoints
   systems/Input.js      keyboard + touch merged into one virtual input state
   systems/Audio.js      no-op sound wrapper (unlocks audio on first input)
   systems/Scaling.js    integer-scale frame sizing for Phaser FIT mode
   systems/device.js     touch-device detection
-  ui/Hud.js             pint counter, score, bonus toast
+  ui/Hud.js             pint counter, run timer, bonus toast
+  ui/Button.js          pixel-font button for touch, mouse and keyboard focus
+  ui/backdrop.js        sky, hills and platform behind the menu screens
   ui/TouchControls.js   on-screen left/right/jump buttons
   ui/safeArea.js        safe-area insets in game pixels
   ui/text.js            shared text helpers (system font, pixel font)
 ```
 
-`Storage.js` arrives in stage 5, following section 4 of the brief.
 
 ## Testing flags
 
@@ -126,9 +127,26 @@ Maps are 12 rows (192 px) against a 180 px screen, so the loader shifts everythi
 
 **Validation rules** (from the jump numbers in `config.js`): gaps of at most 3 tiles, step-ups of at most 2 tiles going right, a safe tile at the same height either side of every glass hazard, one spawn, two checkpoints, one finish inside a flat `end-zone`. `npm run build` refuses to build if any level fails, and the dev build logs an error at boot.
 
+## Game flow
+
+Boot → Menu → Character select → Game (with the UI scene on top) → Complete. On the Complete screen, PLAY AGAIN goes straight back into the level with the same lad and a fresh run; MENU returns to the title (and from there to the selector). If the level registry gives the level a `next`, a NEXT button appears.
+
+| Screen | Touch / mouse | Keyboard |
+| --- | --- | --- |
+| Menu | START button | Enter / Space |
+| Character select | tap a lad, then GO! (or tap the chosen lad again); BACK | ←/→ or A/D, Enter / Space, Esc |
+| Game | on-screen buttons | arrows / A D, Space / Up |
+| Complete | PLAY AGAIN, MENU | ←/→, Enter / Space, Esc for menu |
+
+There is no pause feature (removed at the owner's request). When the page is hidden, Phaser stops its own loop, so the clock doesn't count that time.
+
+## Characters
+
+`CHARACTERS` in `src/assets.js` lists the selectable lads: Naylor plus two placeholders, "LAD 2" and "LAD 3". They differ in looks only; movement and hitbox are identical, so the level tuning holds for everyone. Each entry has an `id`, a `name` (shown on the select screen) and a `palette` for the placeholder sprite (cap/hair, skin, top, trousers, shoes). To rename or recolour a lad, edit that entry; to add one, add an entry. Sprites and the four animations are created for every entry automatically.
+
 ## Swapping placeholder art
 
-All placeholder textures are generated in `src/art/placeholders.js` under the keys in `src/assets.js` (`player`, `coin`, `spikes`, `checkpoint`, `finish`, `tiles`). To use real art, load an image or spritesheet under the same key in `BootScene.preload()`; the placeholder for that key is then skipped. Keep the frame layout in `src/assets.js` in step with the new sheet.
+All placeholder textures are generated in `src/art/placeholders.js` under the keys in `src/assets.js`: `player-<character id>` (e.g. `player-naylor`), `pint`, `espresso-martini`, `glass`, `checkpoint`, `finish`, `tiles`, `hills`, `easel`, `pub-<id>`, `sign-<text>`. To use real art, load an image or spritesheet under the same key in `BootScene.preload()`; the placeholder for that key is then skipped. Player sheets must follow `PLAYER_FRAME` / `PLAYER_FRAMES` (16×16 frames: idle 0–1, run 2–5, jump 6, fall 7), or update those to match the new sheet.
 
 ## Story and theme
 
@@ -142,9 +160,9 @@ Background story: [docs/story.md](docs/story.md). Naylor's "Lad Alarm Train Craw
 | `end-zone` (boss later) | Parkstone platform, where the Train Conductor will be fought |
 | Finish | Parkstone, outside The Avocet |
 | Platforms | Parked British carriages (roof-hopping); gaps between carriages are the jumps |
-| Coin | Pint of stout (10 points) |
+| Coin | Pint of stout; every one missed adds 2 s to the final time |
 | Hazard | Broken glass on platforms and roofs; the river at Wareham |
-| Bonus | One hidden espresso martini (50 points, not counted in the pint total) |
+| Bonus | One hidden espresso martini; takes 5 s off the final time |
 
 The game title stays **Super Lad Alarm**.
 
@@ -168,7 +186,11 @@ The game title stays **Super Lad Alarm**.
 - **Checkpoint triggers** are full screen height, so a checkpoint can't be jumped over.
 - **Texture keys follow the theme:** `pint`, `espresso-martini`, `glass`, `checkpoint` (a railway signal), `finish` (a pub sign), `tiles`, `hills`, `easel`, `pub-<id>`, `sign-<text>`.
 - **"The Old Granary".** `docs/story.md` spells it "Grainary"; the pub sign uses "Granary". Change `PUBS` in `src/assets.js` if that's wrong.
-- **Collectibles.** The registry in `src/entities/Collectible.js` holds `pint` (10 points, counted as collected/total) and `espresso` (50 points, a bonus not in the total, with a pop-up "ESPRESSO MARTINI! +50"). To add a type, add an entry and its texture, then place objects with that `type`.
+- **Collectibles.** The registry in `src/entities/Collectible.js` holds `pint` (`counts: true`, shown as collected/total) and `espresso` (`timeBonusMs: 5000`, not in the total, with a pop-up "ESPRESSO MARTINI! -5.0S"). To add a type, add an entry and its texture, then place objects with that `type`.
 - **HUD text uses a pixel bitmap font** built at boot from the 3×5 font, drawn at 2× with a baked drop shadow. That's 10 game px tall (20 CSS px on a 640×360 phone), crisp at every integer scale, and legible over both sky and brick. The menu and other screens still use the system font until stage 5 or 7.
-- **The HUD shows `SCORE n`** at top right and the pint icon with `collected/total` at top left. Both move in from safe-area insets. Picking up a pint bumps both numbers; the martini bumps the score.
-- **Collected items stay collected** across deaths, and score and pints are never reduced.
+- **Timed runs instead of score (owner's change, replacing the brief's points and best score).** The HUD shows the pint counter at top left and a running clock (`m:ss.t`) at top right. The clock runs from the start of the level to the finish and keeps going through deaths and respawns. Final time = clock + 2 s × missed pints − 5 s if the martini was found, never below zero. The penalty is `TIMING.missedPintPenaltyMs` in `config.js`, and the martini bonus is `timeBonusMs` on its registry entry. The maths is in `finalTime()` in `src/systems/GameState.js`.
+- **Character select (added at the owner's request).** Naylor plus two placeholder lads, looks only. The choice is kept for the session (Phaser registry) so PLAY AGAIN keeps the same lad. Nothing is saved between sessions.
+- **One text style.** All screens and the HUD now use the pixel bitmap font (`addPixelText`). The system font remains only for the `?debug` readout.
+- **Completion.** Touching the finish (a full-height trigger) stops the clock, flashes the screen, lets the lad coast to a stop and shows the Complete screen 1.2 s later. The screen shows the time, the missed-pint penalty, the martini bonus and the final time. `GameScene.finishLocked` holds the finish back, ready for the boss fight.
+- **No persistence and no pause (owner's changes).** The brief's localStorage best score and its pause button/overlay (P/Esc) were removed. Nothing is written to storage.
+- **Collected items stay collected** across deaths, and the pint count never goes down.

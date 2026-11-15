@@ -67,9 +67,12 @@ export const CAMERA = {
   deadzoneWidth: 48, // px the player can move before the camera follows
 };
 
-// Scoring. Per-item points live in the collectible registry (src/entities/Collectible.js).
-export const SCORING = {
-  completionBonus: 100,
+// Timing. The run is measured in time: the clock runs from the start of the
+// level to the finish (deaths included), then every pint left behind adds a
+// penalty. Bonus items take time off (see `timeBonusMs` in the collectible
+// registry, src/entities/Collectible.js).
+export const TIMING = {
+  missedPintPenaltyMs: 2000,
 };
 
 // HUD (game px). Text uses the pixel bitmap font at a whole-number scale.
@@ -79,6 +82,9 @@ export const HUD = {
   bumpScale: 1.3, // counter grows to this × on pickup, then settles
   bumpMs: 90,
 };
+
+// Delay between touching the finish and the Complete screen (celebration).
+export const FINISH_DELAY_MS = 1200;
 
 // Input.
 export const INPUT = {
