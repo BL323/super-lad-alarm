@@ -185,7 +185,7 @@ There is no pause feature (removed at the owner's request). When the page is hid
 
 ## Characters
 
-Every character is **Naylor** (red hair, same skin tone) in a different outfit, chosen on the "CHOOSE YOUR OUTFIT" screen:
+Every character is **Naylor** (red hair, same skin tone) in a different outfit, chosen on the "CHOOSE YOUR NAYLOR" screen:
 
 | Outfit | Look |
 | --- | --- |

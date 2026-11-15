@@ -19,7 +19,7 @@ export default class CharacterSelectScene extends Phaser.Scene {
   create() {
     addBackdrop(this);
     const cx = GAME_WIDTH / 2;
-    addPixelText(this, cx, 10, 'CHOOSE YOUR OUTFIT', { scale: 2, tint: 0xffcd75 }).setOrigin(0.5, 0);
+    addPixelText(this, cx, 10, 'CHOOSE YOUR NAYLOR', { scale: 2, tint: 0xffcd75 }).setOrigin(0.5, 0);
     addPixelText(this, cx, 26, isTouchDevice() ? 'TAP AN OUTFIT, THEN GO' : 'LEFT/RIGHT TO CHOOSE - ENTER TO GO', {
       scale: 1,
     }).setOrigin(0.5, 0);
