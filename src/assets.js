@@ -53,11 +53,11 @@ export const CHARACTERS = [
   {
     id: 'casual',
     name: 'CASUAL',
-    look: 'casual', // blue polo, red chinos
+    look: 'casual', // blue polo, red chinos, brown shoes
     palette: {
       S: SKIN, K: '#1a1c2c', H: HAIR,
       B: '#3b7dd8', L: '#9cc8ff',
-      D: '#be3a34', W: '#fff1e8',
+      D: '#be3a34', W: '#7a4a2a', // brown shoes
     },
   },
   {
@@ -72,7 +72,7 @@ export const CHARACTERS = [
   },
   {
     id: 'senior',
-    name: 'SENIOR',
+    name: 'SENIOR P',
     look: 'senior', // green school blazer, white shirt, green patterned tie, crest
     palette: {
       S: SKIN, K: '#1a1c2c', H: HAIR,

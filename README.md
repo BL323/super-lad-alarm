@@ -189,9 +189,9 @@ Every character is **Naylor** (red hair, same skin tone) in a different outfit, 
 
 | Outfit | Look |
 | --- | --- |
-| **SENIOR** | Green school blazer with a crest, white shirt, green tie with a gold print, grey trousers |
+| **SENIOR P** | Green school blazer with a crest, white shirt, green tie with a gold print, grey trousers |
 | **SEA LORD** | Modern navy admiral: white-topped peaked cap with gold badge and gold-braided peak, navy jacket with gold buttons and sleeve rings, white shirt, black tie |
-| **CASUAL** (default) | Blue polo with a lighter collar, red chinos, white trainers |
+| **CASUAL** (default) | Blue polo with a lighter collar, red chinos, brown shoes |
 
 They differ in looks only. Movement and hitbox are identical, so the level tuning holds for every outfit. `CHARACTERS` in `src/assets.js` holds each outfit's `id`, `name`, `look` and colour `palette`; the head and torso pixel shapes for each look are in `PLAYER_LOOKS` in `src/art/placeholders.js`. The arm poses, legs and all eight animation frames are generated from those, so a new outfit needs one entry in each. `DEFAULT_CHARACTER` sets the default (Casual).
 
@@ -244,7 +244,7 @@ The game title stays **Super Lad Alarm**.
 - **Collectibles.** The registry in `src/entities/Collectible.js` holds `pint` (`counts: true`, shown as collected/total) and `espresso` (`timeBonusMs: 5000`, not in the total, with a pop-up "ESPRESSO MARTINI! -5.0S"). To add a type, add an entry and its texture, then place objects with that `type`.
 - **HUD text uses a pixel bitmap font** built at boot from the 3×5 font, drawn at 2× with a baked drop shadow. That's 10 game px tall (20 CSS px on a 640×360 phone), crisp at every integer scale, and legible over both sky and brick. The menu and other screens still use the system font until stage 5 or 7.
 - **Timed runs instead of score (owner's change, replacing the brief's points and best score).** The HUD shows the pint counter at top left and a running clock (`m:ss.t`) at top right. The clock runs from the start of the level to the finish and keeps going through deaths and respawns. Final time = clock + 2 s × missed pints − 5 s if the martini was found, never below zero. The penalty is `TIMING.missedPintPenaltyMs` in `config.js`, and the martini bonus is `timeBonusMs` on its registry entry. The maths is in `finalTime()` in `src/systems/GameState.js`.
-- **Outfit select (added at the owner's request).** Three Naylor outfits (Senior, Sea Lord, Casual), looks only, with Casual as the default. The choice is kept for the session (Phaser registry) so PLAY AGAIN keeps the same lad. Nothing is saved between sessions.
+- **Outfit select (added at the owner's request).** Three Naylor outfits (Casual, Sea Lord, Senior P), looks only, with Casual as the default. The choice is kept for the session (Phaser registry) so PLAY AGAIN keeps the same lad. Nothing is saved between sessions.
 - **One text style.** All screens and the HUD now use the pixel bitmap font (`addPixelText`). The system font remains only for the `?debug` readout.
 - **Completion.** Touching the finish (a full-height trigger) stops the clock, flashes the screen, lets the lad coast to a stop and shows the Complete screen 1.2 s later. The screen shows the time, the missed-pint penalty, the martini bonus and the final time. `GameScene.finishLocked` holds the finish back until the Train Conductor is beaten (the door shows a padlock while locked).
 - **Portrait freeze without a pause feature.** The rotate overlay sleeps Phaser's game loop rather than pausing scenes, because there is no pause feature. On waking it resets the frame delta first, otherwise the first frame back would add all the portrait time to the clock.
