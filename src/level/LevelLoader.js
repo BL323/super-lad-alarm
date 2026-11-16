@@ -14,6 +14,13 @@ export const DEPTH = {
   foreground: 20, // station canopy (can hide secrets)
 };
 
+// Sprite hazards sitting on a surface tile: texture and hitbox [w, h, offsetX, offsetY]
+// within the 16×16 tile. Anything else (e.g. `water`) is an invisible zone.
+export const HAZARD_SPRITES = {
+  glass: { texture: TEX.GLASS, body: [12, 6, 2, 10] },
+  bucket: { texture: TEX.BUCKET, body: [10, 8, 3, 8] }, // fried-chicken bucket outside The Black Bear
+};
+
 const prop = (obj, name) => obj.properties?.find((p) => p.name === name)?.value;
 const typeOf = (obj) => obj.type || obj.class;
 
@@ -67,12 +74,14 @@ export function loadLevel(scene, levelDef) {
     }
   }
 
-  // Hazards: broken glass (small hitbox at the bottom of the tile) and water.
+  // Hazards: sprite hazards (glass, bucket) with small hitboxes, and water zones.
   const hazards = scene.physics.add.staticGroup();
   for (const h of ofType('hazard')) {
-    if (prop(h, 'kind') === 'glass') {
-      const img = hazards.create(h.x + h.width / 2, h.y + h.height / 2, TEX.GLASS).setDepth(DEPTH.props);
-      img.body.setSize(12, 6, false).setOffset(2, 10);
+    const sprite = HAZARD_SPRITES[prop(h, 'kind')];
+    if (sprite) {
+      const img = hazards.create(h.x + h.width / 2, h.y + h.height / 2, sprite.texture).setDepth(DEPTH.props);
+      const [w, hh, ox, oy] = sprite.body;
+      img.body.setSize(w, hh, false).setOffset(ox, oy);
     } else {
       const z = scene.add.zone(h.x, h.y, h.width, h.height).setOrigin(0);
       hazards.add(z);

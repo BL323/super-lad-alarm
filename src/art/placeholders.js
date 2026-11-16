@@ -360,6 +360,30 @@ function makeGlass(scene) {
   });
 }
 
+// Fried-chicken bucket: red and white stripes, drumsticks poking out. No branding.
+function makeBucket(scene) {
+  makeImage(scene, TEX.BUCKET, 16, 16, (ctx) => {
+    // Drumsticks: golden-brown meat with a white bone tip.
+    for (const [x, y] of [[3, 3], [7, 1], [10, 3]]) {
+      rect(ctx, '#c97a2a', x, y + 1, 3, 3);
+      rect(ctx, '#e8a94a', x, y + 1, 1, 2); // crispy highlight
+      rect(ctx, C.white, x + 1, y, 1, 1); // bone
+    }
+    rect(ctx, '#a35f1f', 2, 6, 12, 1); // more chicken at the rim
+    // Bucket: tapers from 12 px at the rim to 10 px at the base.
+    for (let y = 7; y < 16; y++) {
+      const inset = y >= 12 ? 3 : 2;
+      for (let x = inset; x < 16 - inset; x++) {
+        rect(ctx, Math.floor((x - 2) / 2) % 2 === 0 ? '#e43b44' : C.white, x, y, 1, 1);
+      }
+      px(ctx, '#7e2553', inset, y); // outline
+      px(ctx, '#7e2553', 15 - inset, y);
+    }
+    rect(ctx, C.white, 2, 7, 12, 1); // rim
+    rect(ctx, '#7e2553', 3, 15, 10, 1); // base
+  });
+}
+
 // Railway signal: red (inactive) → green (active).
 function makeCheckpoint(scene) {
   const { width, height } = CHECKPOINT_FRAME;
@@ -817,6 +841,7 @@ const BUILDERS = {
   [TEX.PINT]: makePint,
   [TEX.ESPRESSO]: makeEspresso,
   [TEX.GLASS]: makeGlass,
+  [TEX.BUCKET]: makeBucket,
   [TEX.CHECKPOINT]: makeCheckpoint,
   [TEX.FINISH]: makeFinish,
   [TEX.CONFETTI]: makeConfetti,

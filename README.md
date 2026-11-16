@@ -159,7 +159,7 @@ To be completed on real phones (it can't be tested here):
 A level is a Tiled JSON map with:
 
 - **Tile layers** `background` (no collision: canopy posts, river), `ground` (every tile collides) and `foreground` (drawn over the player: station canopy). They use the tileset `tiles`, which is the generated `tiles` texture (layout in `src/assets.js`).
-- **Object layer `objects`:** `spawn`, at least two `checkpoint`s (property `station`), `collectible`s (property `type`: `pint` or `espresso`), `hazard`s (property `kind`: `glass` or `water`), a `zone` named `end-zone`, an optional `boss` (property `kind`: `conductor`) inside it, a `finish`, and optional `secret` rectangles (the foreground fades while the player is inside). Points for spawn, checkpoints and finish are at the player's feet.
+- **Object layer `objects`:** `spawn`, at least two `checkpoint`s (property `station`), `collectible`s (property `type`: `pint` or `espresso`), `hazard`s (property `kind`: `glass`, `bucket` or `water`), a `zone` named `end-zone`, an optional `boss` (property `kind`: `conductor`) inside it, a `finish`, and optional `secret` rectangles (the foreground fades while the player is inside). Points for spawn, checkpoints and finish are at the player's feet.
 - **Object layer `decor`:** `pub` (property `pub`, an id from `PUBS` in `src/assets.js`), `sign` (property `text`) and `easel`.
 
 Maps are 12 rows (192 px) against a 180 px screen, so the loader shifts everything up 12 px. Only sky is cut off.
@@ -168,7 +168,7 @@ Maps are 12 rows (192 px) against a 180 px screen, so the loader shifts everythi
 
 **Adding a level:** create its JSON in `public/assets/levels/`, add an entry to `src/level/levels.js`, and set the previous level's `next` to its id. `npm run validate:levels` checks it.
 
-**Validation rules** (from the jump numbers in `config.js`): gaps of at most 3 tiles, step-ups of at most 2 tiles going right, a safe tile at the same height either side of every glass hazard, one spawn, at least two checkpoints, one finish inside a flat `end-zone`, at most one boss (inside the end zone), and no collectibles inside a boss arena (so the missed-pint penalty never punishes the fight). `npm run build` refuses to build if any level fails, and the dev build logs an error at boot.
+**Validation rules** (from the jump numbers in `config.js`): gaps of at most 3 tiles, step-ups of at most 2 tiles going right, a safe tile at the same height either side of every glass or bucket hazard, every floating ledge reachable (no more than 2 tiles above a surface within 4 columns), one spawn, at least two checkpoints, one finish inside or after a flat `end-zone`, at most one boss (inside the end zone), and no collectibles inside a boss arena (so the missed-pint penalty never punishes the fight). `npm run build` refuses to build if any level fails, and the dev build logs an error at boot.
 
 ## Game flow
 
@@ -213,7 +213,7 @@ Background story: [docs/story.md](docs/story.md). Naylor's "Lad Alarm Train Craw
 | Finish | The Avocet's front door at Parkstone |
 | Platforms | Parked British carriages (roof-hopping); gaps between carriages are the jumps |
 | Coin | Pint of stout; every one missed adds 2 s to the final time |
-| Hazard | Broken glass on platforms and roofs; the river at Wareham |
+| Hazard | Broken glass on platforms and roofs; a fried-chicken bucket outside The Black Bear; the river at Wareham |
 | Bonus | One hidden espresso martini; takes 5 s off the final time |
 
 The game title stays **Super Lad Alarm**.
@@ -235,7 +235,9 @@ The game title stays **Super Lad Alarm**.
 - **Level authoring.** `level-01.json` is generated from a short Node script rather than drawn in Tiled, because no Tiled install is assumed and the script is easy to review. The output is standard Tiled JSON.
 - **Level length and pacing.** 198 tiles (3,168 px, 9.9 screens). Start is Dorchester (cols 0–53), middle is Wool to the embankment (cols 54–123), end is Wareham → the boss train (cols 158–177) → Parkstone (cols 178–197). The middle is about 3.5 screens, a little under the brief's 4–5, so the stations fit evenly. A non-stop run that never stops to collect takes about 23 s; a first-time player collecting pints will take longer.
 - **Hazard placement.** The autopilot play test found two unfair spots, both now fixed: glass right where you land after dropping off a roof (removed), and a crate stair ending three tiles before a gap (moved two tiles earlier). Both had passed the validator's rules.
-- **Hidden espresso martini.** It sits on a crate stair under the Wool station canopy. The canopy is drawn in front of the player and fades to 35% while you're underneath it.
+- **Hidden espresso martini (moved at the owner's request so a straight run never collects it).** It sits on a small floating ledge tucked up in the Wool station canopy, up and to the left of the crate stair (col 71). Its glass just peeks above the canopy roof as a tease. The only way up is to turn back from the top crate (col 74) and jump up-left. The canopy is drawn in front of the player and fades to 35% while you're underneath it. An autopilot run through the level misses it; the up-left jump gets it and drops you straight back onto the course.
+- **Chicken-bucket hazard (owner's request).** The broken glass outside The Black Bear is a red-and-white fried-chicken bucket (no branding), just as deadly. Sprite hazards are listed in `HAZARD_SPRITES` in `src/level/LevelLoader.js` (texture and hitbox); the level builder places them with `hazard(kind, col)`.
+- **Validator surfaces.** The validator walks the solid stack that stands on the bottom row of each column, so floating ledges don't count as walls on the main path. Ledges get their own reachability check instead.
 - **Checkpoint triggers** are full screen height, so a checkpoint can't be jumped over.
 - **Texture keys follow the theme:** `pint`, `espresso-martini`, `glass`, `checkpoint` (a railway signal), `finish` (The Avocet's door, 14×26, closed/open frames), `confetti`, `tiles`, `hills`, `easel`, `pub-<id>`, `sign-<text>`.
 - **"The Old Granary".** `docs/story.md` spells it "Grainary"; the pub sign uses "Granary". Change `PUBS` in `src/assets.js` if that's wrong.

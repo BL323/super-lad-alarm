@@ -104,9 +104,11 @@ const finish = (col) => addObject('finish', 'finish', ...feet(col));
 const pint = (col, row) => addObject('collectible', 'pint', col * TS + TS / 2, row * TS + TS / 2, 0, 0, { type: 'pint' });
 const espresso = (col, row) =>
   addObject('collectible', 'espresso-martini', col * TS + TS / 2, row * TS + TS / 2, 0, 0, { type: 'espresso' });
-/** Broken glass sitting on the surface at `surfaceRow`. */
-const glass = (col, surfaceRow = SURFACE) =>
-  addObject('hazard', 'glass', col * TS, (surfaceRow - 1) * TS, TS, TS, { kind: 'glass' });
+/** A one-tile hazard (`glass`, `bucket`) sitting on the surface at `surfaceRow`. */
+const hazard = (kind, col, surfaceRow = SURFACE) =>
+  addObject('hazard', kind, col * TS, (surfaceRow - 1) * TS, TS, TS, { kind });
+const glass = (col, surfaceRow = SURFACE) => hazard('glass', col, surfaceRow);
+const bucket = (col, surfaceRow = SURFACE) => hazard('bucket', col, surfaceRow);
 const boss = (col, kind, surfaceRow = SURFACE) => addObject('boss', kind, ...feet(col, surfaceRow), 0, 0, { kind });
 const zone = (name, c0, c1) => addObject('zone', name, c0 * TS, 0, (c1 - c0 + 1) * TS, ROWS * TS);
 const secret = (c0, c1, r0, r1) => addObject('secret', 'secret', c0 * TS, r0 * TS, (c1 - c0 + 1) * TS, (r1 - r0 + 1) * TS);
@@ -145,16 +147,20 @@ checkpoint(56, 'Wool');
 sign(59, 'WOOL');
 pub(64, 'black-bear');
 pint(60, 9);
-glass(67);
+bucket(67); // a fried-chicken bucket outside The Black Bear
 pint(67, 7);
-// Secret: a crate stair under the station canopy hides the espresso martini.
+// Secret: the espresso martini sits on a ledge tucked up in the station
+// canopy, up and to the LEFT of the crate stair. The only way up is to turn
+// back from the top crate (col 74, 2 tiles below the ledge), so it's never
+// collected just by running the course.
 crates(72, 9);
 crates(73, 8);
 crates(74, 6);
 crates(75, 8); // also the step onto the next train
+set('ground', 71, 4, T.crate); // the hidden ledge (floating)
 canopy(69, 76, 4, [70, 76]);
-espresso(74, 5);
-secret(69, 76, 3, 9);
+espresso(71, 3);
+secret(69, 76, 2, 9);
 pint(72, 8);
 pint(73, 7);
 

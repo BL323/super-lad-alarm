@@ -25,17 +25,39 @@ export function validateLevel(map, rules = LEVEL_RULES, knownCollectibleTypes = 
   const { width: cols, height: rows } = ground;
   const tw = map.tilewidth;
 
-  // Topmost solid row per column (null = gap).
+  const solid = (c, r) => !!ground.data[r * cols + c];
+
+  // Walkable surface per column: the top of the solid stack standing on the
+  // bottom row (null = gap). Floating tiles above it (optional ledges) don't
+  // count as walls on the main path; they're checked for reachability below.
   const surface = [];
   for (let c = 0; c < cols; c++) {
     let top = null;
-    for (let r = 0; r < rows; r++) {
-      if (ground.data[r * cols + c]) {
-        top = r;
-        break;
-      }
-    }
+    for (let r = rows - 1; r >= 0 && solid(c, r); r--) top = r;
     surface.push(top);
+  }
+
+  // Floating ledges: solid tiles not part of a column's ground stack. Each
+  // ledge top must be reachable: at most maxStepUpTiles above some surface or
+  // ledge within maxGapTiles columns.
+  const ledges = [];
+  for (let c = 0; c < cols; c++) {
+    for (let r = 0; r < rows; r++) {
+      const inStack = surface[c] !== null && r >= surface[c];
+      if (solid(c, r) && !inStack && (r === 0 || !solid(c, r - 1))) ledges.push({ c, r });
+    }
+  }
+  const tops = (c) => [surface[c], ...ledges.filter((l) => l.c === c).map((l) => l.r)].filter((v) => v !== null);
+  for (const l of ledges) {
+    let reachable = false;
+    for (let dc = -rules.maxGapTiles - 1; dc <= rules.maxGapTiles + 1 && !reachable; dc++) {
+      const n = l.c + dc;
+      if (dc === 0 || n < 0 || n >= cols) continue;
+      // Rows grow downwards: t - l.r is how far below the ledge a neighbouring top is
+      // (negative = above it, so you can drop onto the ledge).
+      reachable = tops(n).some((t) => t - l.r <= rules.maxStepUpTiles);
+    }
+    if (!reachable) errors.push(`ledge at col ${l.c} row ${l.r} can't be reached (nothing within ${rules.maxStepUpTiles} tiles below it nearby)`);
   }
 
   // Gaps and step-ups along the intended left-to-right path.
@@ -98,18 +120,19 @@ export function validateLevel(map, rules = LEVEL_RULES, knownCollectibleTypes = 
     if (surface[c] === null) errors.push(`${o.type} "${o.name}" at col ${c} is over a gap`);
   }
 
-  // Hazards: every glass hazard needs a safe tile at the same height either side.
+  // Hazards: every surface hazard (glass, bucket) needs a safe tile at the same height either side.
+  const SURFACE_HAZARDS = ['glass', 'bucket'];
   const glassCols = new Set();
-  for (const h of ofType('hazard').filter((h) => prop(h, 'kind') === 'glass')) {
+  for (const h of ofType('hazard').filter((h) => SURFACE_HAZARDS.includes(prop(h, 'kind')))) {
     for (let c = colOf(h.x); c <= colOf(h.x + h.width - 1); c++) glassCols.add(c);
   }
   for (const c of glassCols) {
     const s = surface[c];
     for (const n of [c - 1, c + 1]) {
       if (glassCols.has(n)) continue;
-      if (surface[n] !== s) errors.push(`glass at col ${c} has no safe landing tile at col ${n}`);
+      if (surface[n] !== s) errors.push(`hazard at col ${c} has no safe landing tile at col ${n}`);
     }
-    if (glassCols.has(c - 1) && glassCols.has(c + 1)) errors.push(`glass at col ${c} is part of a run longer than 2`);
+    if (glassCols.has(c - 1) && glassCols.has(c + 1)) errors.push(`hazard at col ${c} is part of a run longer than 2`);
   }
 
   // Collectibles.
@@ -125,6 +148,7 @@ export function validateLevel(map, rules = LEVEL_RULES, knownCollectibleTypes = 
   info.screens = +((cols * tw) / 320).toFixed(1);
   info.collectibles = counts;
   info.hazards = ofType('hazard').length;
+  info.ledges = ledges.length;
   info.boss = bosses.length ? prop(bosses[0], 'kind') : null;
   return { errors, info };
 }

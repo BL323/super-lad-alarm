@@ -7,6 +7,7 @@ export const TEX = {
   PINT: 'pint',
   ESPRESSO: 'espresso-martini',
   GLASS: 'glass', // broken-glass hazard
+  BUCKET: 'chicken-bucket', // fried-chicken bucket hazard (outside The Black Bear)
   CHECKPOINT: 'checkpoint', // railway signal: red → green
   FINISH: 'finish', // The Avocet's front door: closed (padlocked) / open
   TILES: 'tiles',
