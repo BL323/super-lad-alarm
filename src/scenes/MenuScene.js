@@ -6,6 +6,7 @@ import { addPixelText } from '../ui/text.js';
 import { addBackdrop } from '../ui/backdrop.js';
 import Button from '../ui/Button.js';
 import { isTouchDevice } from '../systems/device.js';
+import Audio from '../systems/Audio.js';
 
 export default class MenuScene extends Phaser.Scene {
   constructor() {
@@ -27,7 +28,10 @@ export default class MenuScene extends Phaser.Scene {
         .play({ key: playerAnimKey(c.id, 'idle'), delay: i * 250 });
     });
 
-    const start = () => this.scene.start(SCENE.SELECT);
+    const start = () => {
+      Audio.play('select');
+      this.scene.start(SCENE.SELECT);
+    };
     new Button(this, cx, 94, 'START', start, { width: 96 }).setFocused(true);
     this.input.keyboard.once('keydown-ENTER', start);
     this.input.keyboard.once('keydown-SPACE', start);

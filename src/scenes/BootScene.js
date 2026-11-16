@@ -4,6 +4,7 @@ import { createPlaceholderTextures } from '../art/placeholders.js';
 import { registerAnimations } from '../art/animations.js';
 import { createPixelBitmapFont } from '../art/bitmapFont.js';
 import { collectibleTypes } from '../entities/Collectible.js';
+import Audio from '../systems/Audio.js';
 import { LEVELS } from '../level/levels.js';
 import { validateLevel, formatReport } from '../level/validateLevel.js';
 
@@ -22,6 +23,7 @@ export default class BootScene extends Phaser.Scene {
     createPlaceholderTextures(this);
     registerAnimations(this);
     createPixelBitmapFont(this);
+    Audio.registerSynthSounds(this);
 
     // Dev-only: re-check every level against the difficulty rules.
     if (import.meta.env.DEV) {

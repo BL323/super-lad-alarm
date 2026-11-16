@@ -7,6 +7,7 @@ import { addBackdrop, addPanel } from '../ui/backdrop.js';
 import Button from '../ui/Button.js';
 import { getLevel } from '../level/levels.js';
 import { formatTime, formatSeconds } from '../systems/GameState.js';
+import Audio from '../systems/Audio.js';
 
 // "Level Complete": the run time, +2 s for every pint left behind, −5 s for
 // the espresso martini, and the final time. Nothing is saved. Play again
@@ -60,6 +61,14 @@ export default class CompleteScene extends Phaser.Scene {
     ];
     if (next) this.buttons.push(new Button(this, cx + 58, 124, 'NEXT', next, { width: 112 }));
     this.focus = next ? 2 : 1;
+    // Every button blips when pressed (tap or keyboard).
+    for (const b of this.buttons) {
+      const run = b.onClick;
+      b.onClick = () => {
+        Audio.play('select');
+        run();
+      };
+    }
     this.actions = this.buttons.map((b) => b.onClick);
     this.refreshFocus();
 
@@ -72,6 +81,7 @@ export default class CompleteScene extends Phaser.Scene {
   }
 
   moveFocus(d) {
+    Audio.play('move');
     this.focus = Phaser.Math.Wrap(this.focus + d, 0, this.buttons.length);
     this.refreshFocus();
   }

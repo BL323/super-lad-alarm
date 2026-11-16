@@ -15,7 +15,7 @@ export const collectibleTypes = {
     counts: false,
     timeBonusMs: 5000,
     label: 'ESPRESSO MARTINI!',
-    sound: 'coin',
+    sound: 'bonus',
   },
 };
 

@@ -1,6 +1,7 @@
 import { GAME_HEIGHT } from '../config.js';
 import { TEX, CHECKPOINT_FRAME } from '../assets.js';
 import { DEPTH } from '../level/LevelLoader.js';
+import Audio from './Audio.js';
 
 // Railway-signal checkpoints. Touching one turns it green and stores it as the
 // respawn point in GameState.
@@ -33,6 +34,7 @@ export default class Checkpoints {
     if (item.active || this.player.dead) return;
     item.active = true;
     item.sprite.setFrame(CHECKPOINT_FRAME.active);
+    Audio.play('checkpoint');
     this.scene.tweens.add({ targets: item.sprite, scaleY: 1.15, duration: 90, yoyo: true, ease: 'Quad.Out' });
 
     const { name, x, y } = item.def;

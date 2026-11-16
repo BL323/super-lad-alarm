@@ -3,6 +3,7 @@ import { BOSS, CAMERA, GAME_HEIGHT } from '../config.js';
 import { TEX } from '../assets.js';
 import Conductor, { BossState } from '../entities/Conductor.js';
 import { DEPTH } from '../level/LevelLoader.js';
+import Audio from './Audio.js';
 
 // The Train Conductor fight on the roof of his train (the level's end zone),
 // between Wareham and Parkstone.
@@ -126,6 +127,7 @@ export default class BossArena {
         if (boss.takeHit()) this.win();
       } else if (boss.state !== BossState.HURT && boss.state !== BossState.DEFEATED) {
         p.bounce(BOSS.stompBounce * 0.8); // harmless bounce off his cap
+        Audio.play('bounce');
       }
       return;
     }
@@ -138,6 +140,7 @@ export default class BossArena {
     this.setWalls(false);
     this.releaseCamera(); // free to hop off at Parkstone
     this.scene.cameras.main.flash(250, 255, 236, 39);
+    Audio.play('boss-defeated');
     // Knock him off the train, away from the player.
     const awayDir = this.boss.x >= this.player.x ? 1 : -1;
     this.boss.exit(awayDir);

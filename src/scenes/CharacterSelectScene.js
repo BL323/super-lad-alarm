@@ -6,6 +6,7 @@ import { addPixelText } from '../ui/text.js';
 import { addBackdrop } from '../ui/backdrop.js';
 import Button from '../ui/Button.js';
 import { isTouchDevice } from '../systems/device.js';
+import Audio from '../systems/Audio.js';
 
 const CARD = { w: 92, h: 78, y: 82, spacing: 100, spriteScale: 3 }; // wide enough for "SEA LORD"
 
@@ -52,11 +53,15 @@ export default class CharacterSelectScene extends Phaser.Scene {
     kb.once('keydown-SPACE', () => this.go());
     kb.once('keydown-ESC', () => this.back());
 
+    this.ready = false; // no blip for the initial highlight
     this.select(this.index);
+    this.ready = true;
   }
 
   select(i) {
-    this.index = Phaser.Math.Wrap(i, 0, this.cards.length);
+    const next = Phaser.Math.Wrap(i, 0, this.cards.length);
+    if (this.ready && next !== this.index) Audio.play('move');
+    this.index = next;
     this.cards.forEach((card, j) => {
       const on = j === this.index;
       const { x } = card;
@@ -72,12 +77,14 @@ export default class CharacterSelectScene extends Phaser.Scene {
   }
 
   go() {
+    Audio.play('select');
     const id = this.cards[this.index].c.id;
     this.registry.set('characterId', id);
     this.scene.start(SCENE.GAME, { characterId: id });
   }
 
   back() {
+    Audio.play('select');
     this.scene.start(SCENE.MENU);
   }
 }

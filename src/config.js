@@ -109,6 +109,11 @@ export const BOSS = {
 // in, confetti falls, "CHEERS!").
 export const FINISH_DELAY_MS = 2600;
 
+// Sound. Effects are synthesised in src/audio/sfx.js (retro square/noise voices).
+export const AUDIO = {
+  volume: 0.6, // master volume 0..1
+};
+
 // What the lad says when the Conductor is beaten, and how long the bubble stays.
 export const SPEECH = {
   bossDefeated: "I'M PAYING TO BE HERE",

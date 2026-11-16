@@ -95,7 +95,8 @@ src/
   ui/SpeechBubble.js    speech bubble that follows a sprite and stays on screen
   systems/Celebration.js finish confetti (door burst + falling shower)
   systems/Input.js      keyboard + touch merged into one virtual input state
-  systems/Audio.js      no-op sound wrapper (unlocks audio on first input)
+  systems/Audio.js      sound wrapper: builds synth effects at boot, plays by key, unlocks on first input
+  audio/sfx.js          retro sound effects synthesised in code (no audio files)
   systems/Scaling.js    integer-scale frame sizing for Phaser FIT mode
   systems/device.js     touch-device detection
   systems/mobile.js     iOS gesture blocking and the portrait rotate overlay (freezes the game)
@@ -107,6 +108,31 @@ src/
   ui/text.js            shared text helpers (system font, pixel font)
 ```
 
+
+## Sound
+
+Retro 8-bit sound effects are synthesised in code at boot (`src/audio/sfx.js`): square, triangle, sine and noise voices with pitch sweeps, vibrato and short envelopes. There are no audio files and no extra packages. Each effect is stored in Phaser's audio cache under a key, and gameplay plays it with `Audio.play(key)`.
+
+| Key | When | Sound |
+| --- | --- | --- |
+| `jump` | Every jump | Quick rising blip |
+| `coin` | Pint collected | Two-note pickup chime |
+| `bonus` | Espresso martini | Brighter four-note arpeggio |
+| `checkpoint` | Signal turns green | "Ding-dong" station bell |
+| `death` | Any death | Falling wobble with a crunch |
+| `whistle` | Conductor's intro and every wind-up | Guard's pea whistle |
+| `ticket` | Each ticket thrown | Short flick |
+| `dash` | Conductor charges | Whoosh |
+| `bounce` | Landing on his cap when he isn't dizzy | Harmless "boing" |
+| `boss-hit` | Stomping him while dizzy | Thud |
+| `boss-defeated` | Third stomp | Comedy "wah-wah-wah-waaah" |
+| `finish` | Walking into The Avocet | Victory fanfare |
+| `select` / `move` | Menu buttons / changing selection | Tiny blips |
+
+- **Volume:** `AUDIO.volume` in `src/config.js` (master, default 0.6).
+- **Replacing a sound:** load a real file under the same key in `BootScene.preload()` and the synth version is skipped.
+- **Unlocking:** browsers only allow sound after a tap or key press, and the first tap on START does that.
+- **iPhones:** the game asks Safari for "ambient" audio, so it respects the silent switch and doesn't stop the player's own music.
 
 ## Testing flags
 

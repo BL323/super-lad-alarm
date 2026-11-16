@@ -23,3 +23,4 @@
 - Phaser Containers already have `x, y, z, w` (Transform): never store sizes as `this.w`/`this.h` on a Container (`setPosition()` resets `w` to 0).
 - Listeners on `scene.events` 'update' can fire once more in the frame their owner is destroyed (snapshot emit); guard with `if (!this.scene) return`.
 - The finish is a pub door: put the `finish` object in the same column as its `pub` decor.
+- Sound: effects are synthesised in `src/audio/sfx.js` and built into the audio cache at boot (`Audio.registerSynthSounds`). Play with `Audio.play(key)`; a real file loaded under the same key replaces the synth. Don't add audio packages.

@@ -100,8 +100,11 @@ export default class Conductor extends Phaser.Physics.Arcade.Sprite {
 
     switch (state) {
       case BossState.WAITING:
+        this.setFrame(F.idle);
+        break;
       case BossState.INTRO:
         this.setFrame(F.idle);
+        Audio.play('whistle'); // "Tickets please!"
         break;
       case BossState.WALK:
         this.play(ANIM.CONDUCTOR_WALK);
@@ -116,6 +119,7 @@ export default class Conductor extends Phaser.Physics.Arcade.Sprite {
       case BossState.DASH:
         this.setFrame(F.dash);
         this.dashDir = this.flipX ? -1 : 1;
+        Audio.play('dash');
         break;
       case BossState.DIZZY:
         this.setFrame(F.dizzy);
